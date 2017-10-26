@@ -11,15 +11,20 @@ end
 
 function calc_Amn_back(nbegin, nend, BCfn)
     @assert nbegin >= nend
-    A = eye(2)
+    T = Complex{Float64}
+    A = eye(T, 2)
     for n=nbegin-1:-1:nend
         B, C, D, E = BCfn(n)
-        An = [[B  C]; [D  E]]
-        A = An * A
-        #A[1,1] = B * A[1,1] + C * A[2,1]
-        #A[1,2] = B * A[1,2] + C * A[2,2]
-        #A[2,1] = D * A[1,1] + E * A[2,1]
-        #A[2,2] = D * A[1,2] + E * A[2,2]
+        #An = [[B  C]; [D  E]]
+        #A = An * A
+        A11 = B * A[1,1] + C * A[2,1]
+        A12 = B * A[1,2] + C * A[2,2]
+        A21 = D * A[1,1] + E * A[2,1]
+        A22 = D * A[1,2] + E * A[2,2]
+        A[1,1] = A11
+        A[1,2] = A12
+        A[2,1] = A21
+        A[2,2] = A22
     end
     return A
 end
@@ -90,6 +95,7 @@ end
 
 
 function calc_underflow_fmax(nmax, calc_f, fasymp)
+    nmin = 0
     nmid = div(nmin + nmax, 2)
     fmax = deepcopy(fasymp)
     while nmid != nmin && nmid != nmax

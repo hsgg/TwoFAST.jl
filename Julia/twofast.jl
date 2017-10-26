@@ -646,12 +646,11 @@ function BCDEfn(ell, dl, a, R)
 end
 function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 			      G=log(1e4/1e-4), alpha=1e-4)
-	fold, lold = calc_2f1_RqmG_orig(ell, R, dl; q=q, m=m, G=G, alpha=alpha)
+	#fold, lold = calc_2f1_RqmG_orig(ell, R, dl; q=q, m=m, G=G, alpha=alpha)
 
 	t = 2 * T(pi) * m / G
 	n = q - 1 - im * t
 	a = n / 2 + dl / 2
-
 
 	@assert R <= 1
 
@@ -685,14 +684,14 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 		fell, ell = calc_fn(ell, BCfn, f0, fasymp)
 	end
 
-	println()
-	println("fell: $fell")
-	println("fold: $fold")
-	println("fell-fold: $(fell-fold)")
-	println("ell: $ell")
-	println("old: $lold")
-	print("Continue? ")
-	readline()
+	#println()
+	#println("fell: $fell")
+	#println("fold: $fold")
+	#println("fell-fold: $(fell-fold)")
+	#println("ell: $ell")
+	#println("old: $lold")
+	#print("Continue? ")
+	#readline()
 	return fell, ell
 end
 
