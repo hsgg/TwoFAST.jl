@@ -651,36 +651,33 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 	t = 2 * T(pi) * m / G
 	n = q - 1 - im * t
 	a = n / 2 + dl / 2
+	BCfn(ell) = BCDEfn(ell, dl, a, R)
+	fnull = [Complex{T}(0), Complex{T}(0)]
 
 	@assert R <= 1
 
 	if R == 0 && ell+dl != 0
-		return [Complex{T}(0), Complex{T}(0)], ell
-	end
-
-	B0 = Mellell_pre(0, 0+dl, R, n, alpha)
-	f21 = calc_f0(R, n, dl)
-	f0 = B0 * f21
-	if !all(isfinite.(f0)) && n != 0 && R != 1
-		warn("R: $R")
-		warn("n: $n")
-		warn("dl: $dl")
-		warn("alpha: $alpha")
-		warn("B0:  $B0")
-		warn("f21: $f21")
-		warn("f0:  $f0")
-		error("Matchpoint could not be calculated")
-	end
-
-	BCfn(ell) = BCDEfn(ell, dl, a, R)
-	fasymp = [Complex{T}(1), Complex{T}(1)]
-
-	if R == 1
+		return fnull, ell
+	elseif R == 1
 		calc_fmax_unity(ell, BCfn, f0, fasymp; growth=:a, ndiff=0) = begin
 			calc_Mll_unity(ell, n, dl, alpha)
 		end
-		fell, ell = calc_fn(ell, BCfn, f0, fasymp; calc_fmax=calc_fmax_unity)
+		fell, ell = calc_fn(ell, BCfn, fnull, fnull; calc_fmax=calc_fmax_unity)
 	else
+		B0 = Mellell_pre(0, 0+dl, R, n, alpha)
+		f21 = calc_f0(R, n, dl)
+		f0 = B0 * f21
+		if !all(isfinite.(f0)) && n != 0 && R != 1
+			warn("R: $R")
+			warn("n: $n")
+			warn("dl: $dl")
+			warn("alpha: $alpha")
+			warn("B0:  $B0")
+			warn("f21: $f21")
+			warn("f0:  $f0")
+			error("Matchpoint could not be calculated")
+		end
+		fasymp = [Complex{T}(1), Complex{T}(1)]
 		fell, ell = calc_fn(ell, BCfn, f0, fasymp)
 	end
 
