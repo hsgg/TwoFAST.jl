@@ -1,3 +1,4 @@
+include("./miller.jl")
 module TwoFAST
 
 export unzip
@@ -220,53 +221,8 @@ function calc_f0_dl4(R, n; Rcrit=0.1)
 		(14 + n)*(15 + n)*(17 + n)*Power(R,12))/6.704425728e11
 
 		return [f000s4, f010s4]
-		#=
-		if imag(n) == 0
-			m = 0
-			G = 1.0
-		else
-			m = 500  # only the ratio m/G is used, so choose whatever
-			G = -2pi*m/imag(n)
-		end
-		return Array{Complex128}(hyp2f1_bp1(0, 4, R, real(n)+1, m, G))
-		=#
 	end
 
-	#=
-	gplus(n,R) = (1+R)^n + (1-R)^n
-	gminus(n,R) = (1+R)^n - (1-R)^n
-	f000fn4(m) = 945 * (
-		-5*m*R * (21 + (-11+2m^2)*R^2) * gplus(m,R)
-		+ (105 + 45 * (-2 + m^2) * R^2
-			+ (9 - 10m^2 + m^4) * R^4) * gminus(m,R)
-		) / (
-		2m * @evalpoly(m^2, 576, -820, 273, -30, 1) * R^9
-		)
-	f010fn4(n) = 945 * (
-		@evalpoly(R^2, 105, 15*(-5+3n^2), n^2*(-4+n^2)) * gminus(-n,-R)
-		- n*R * (105 + (-4+n^2)*R^2*(10+R^2)) * gplus(-n,-R)
-		) / (
-		2*(-5+n)*(-3+n)*(-2+n)*(-1+n)*n*(1+n)*(2+n)*(3+n)*(5+n)*R^9
-		)
-	=#
-	#=
-	f000fn4(m) = (945*(Power(1 + R,m)*(105 - 105*m*R + 45*(-2 + Power(m,2))*Power(R,2) + 
-		5*m*(11 - 2*Power(m,2))*Power(R,3) + 
-		(9 - 10*Power(m,2) + Power(m,4))*Power(R,4)) - 
-		Power(1 - R,m)*(105 + 105*m*R + 45*(-2 + Power(m,2))*Power(R,2) + 
-		5*m*(-11 + 2*Power(m,2))*Power(R,3) + 
-		(9 - 10*Power(m,2) + Power(m,4))*Power(R,4))))/
-		(2.*(-4 + m)*(-3 + m)*(-2 + m)*(-1 + m)*m*(1 + m)*(2 + m)*(3 + m)*(4 + m)*
-		Power(R,9))
-	f010fn4(n) = (-945*Power(1 + R,n)*(-105 + R*(75*R + 
-		n*(105 - 45*n*R + 10*(-4 + Power(n,2))*Power(R,2) - 
-		n*(-4 + Power(n,2))*Power(R,3) + (-4 + Power(n,2))*Power(R,4)))) - 
-		945*Power(1 - R,n)*(105 + R*(-75*R + 
-		n*(105 + 45*n*R + 10*(-4 + Power(n,2))*Power(R,2) + 
-		n*(-4 + Power(n,2))*Power(R,3) + (-4 + Power(n,2))*Power(R,4)))))/
-		(2.*(-5 + n)*(-3 + n)*(-2 + n)*(-1 + n)*n*(1 + n)*(2 + n)*(3 + n)*(5 + n)*
-		Power(R,9)*Power(1 - Power(R,2),n))
-	=#
 	f000fn4(m) = (945*(Power(1 + R,m)*(105 - 105*m*R + 45*(-2 + Power(m,2))*Power(R,2) + 
 		5*m*(11 - 2*Power(m,2))*Power(R,3) + 
 		(9 - 10*Power(m,2) + Power(m,4))*Power(R,4)) - 
@@ -303,6 +259,7 @@ function calc_f0{T}(R::T, n, dl; use_arb=false)
 		error("dl=$dl not implemented, R=$R, n=$n")
 	end
 end
+
 
 function Dellinv_mul_D!{T}(acinv::Complex{T}, dloc::T, fac::Complex{T}, z::T, D)
 	const sqrt2 = sqrt(T(2))
@@ -624,7 +581,7 @@ function calc_underflow_fmax{T}(ellmax, ellmatch, fmatch, R::T, n, dl, alpha)
 end
 
 
-function calc_2f1_RqmG{T}(ell, R::T, dl; q=1.0, m::Int=500, G=log(1e4/1e-4), alpha=1e-4)
+function calc_2f1_RqmG_orig{T}(ell, R::T, dl; q=1.0, m::Int=500, G=log(1e4/1e-4), alpha=1e-4)
 	t = 2 * T(pi) * m / G
 	n = q - 1 - im * t
 	a = n / 2 + dl / 2
@@ -670,7 +627,78 @@ function calc_2f1_RqmG{T}(ell, R::T, dl; q=1.0, m::Int=500, G=log(1e4/1e-4), alp
 	return fell, ell
 end
 
+# alternative
+using Miller
+function BCDEfn(ell, dl, a, R)
+	c = ell + dl + 3/2
+	ainvc = a / c
+	dloc = dl / c
+	b = c + a - 1 - dl
+	z = R^2
+	fac = c / (R * b)
 
+	B = fac * (z - ainvc + dloc * (1 - z))
+	C = fac * (1 + ainvc - dloc) * (1 - z)
+	D = fac * (-ainvc + dloc)
+	E = fac * (1 + ainvc - dloc)
+
+	return B, C, D, E
+end
+function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
+			      G=log(1e4/1e-4), alpha=1e-4)
+	fold, lold = calc_2f1_RqmG_orig(ell, R, dl; q=q, m=m, G=G, alpha=alpha)
+
+	t = 2 * T(pi) * m / G
+	n = q - 1 - im * t
+	a = n / 2 + dl / 2
+
+
+	@assert R <= 1
+
+	if R == 0 && ell+dl != 0
+		return [Complex{T}(0), Complex{T}(0)], ell
+	end
+
+	B0 = Mellell_pre(0, 0+dl, R, n, alpha)
+	f21 = calc_f0(R, n, dl)
+	f0 = B0 * f21
+	if !all(isfinite.(f0)) && n != 0 && R != 1
+		warn("R: $R")
+		warn("n: $n")
+		warn("dl: $dl")
+		warn("alpha: $alpha")
+		warn("B0:  $B0")
+		warn("f21: $f21")
+		warn("f0:  $f0")
+		error("Matchpoint could not be calculated")
+	end
+
+	BCfn(ell) = BCDEfn(ell, dl, a, R)
+	fasymp = [Complex{T}(1), Complex{T}(1)]
+
+	if R == 1
+		calc_fmax_unity(ell, BCfn, f0, fasymp; growth=:a, ndiff=0) = begin
+			calc_Mll_unity(ell, n, dl, alpha)
+		end
+		fell, ell = calc_fn(ell, BCfn, f0, fasymp; calc_fmax=calc_fmax_unity)
+	else
+		fell, ell = calc_fn(ell, BCfn, f0, fasymp)
+	end
+
+	println()
+	println("fell: $fell")
+	println("fold: $fold")
+	println("fell-fold: $(fell-fold)")
+	println("ell: $ell")
+	println("old: $lold")
+	print("Continue? ")
+	readline()
+	return fell, ell
+end
+
+
+#calc_2f1_RqmG = calc_2f1_RqmG_orig
+calc_2f1_RqmG = calc_2f1_RqmG_new
 
 
 #################### b+1 recursion
