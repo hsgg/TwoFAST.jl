@@ -162,15 +162,15 @@ end
 
 
 function make_phi(pkfn, k0, N, L, q, winx, wink)
-	k = k0 .* exp.((0:N-1) .* (2 * pi / L))
-	pk = pkfn(k)
+	k = @. k0 * exp((0:N-1) * (2 * pi / L))
+	pk = pkfn.(k)
 	return make_phi((k, pk), k0, N, L, q, winx, wink)
 end
 
 function make_phi(pkfn::Tuple, k0, N, L, q, winx, wink)
 	k = pkfn[1]
 	pk = pkfn[2]
-	kpk = (k./k0).^(3 - q) .* pk .* winx(k)
+	kpk = (@. (k/k0)^(3 - q) * pk) .* winx(k)
 	phi = conj(rfft(kpk)) / L
 	phi .*= wink(k)[length(k)-length(phi)+1:end]
 	return phi
@@ -179,8 +179,8 @@ end
 
 function make_Mellnu(tt, alpha, ell, nu; q=0)
 	n = q - nu - 1 - im*tt
-	intjlttn = 2.0.^(n-1) .* sqrt(pi) .* exp.(mylgamma.((1 + ell + n) / 2)
-		- mylgamma.((2 + ell - n) / 2))
+	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(mylgamma((1 + ell + n) / 2)
+		- mylgamma((2 + ell - n) / 2))
 	A = alpha.^(im*tt - q + nu)
 	#println("n: $(n[2])")
 	#println("intjlttn: $(intjlttn[2])")
@@ -1778,9 +1778,9 @@ function xicalc{T,Tq}(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000
 
 	tt = (2 * pi / G) * (0:N2-1)
 
-	rr = r0 * exp.((0:N-1) * (G / N))
+	rr = @. r0 * exp((0:N-1) * (G / N))
 
-	prefac = (k0^3 / (pi * alpha^nu * G)) * (rr / r0).^(-(qnu+nu))
+	prefac = @. (k0^3 / (pi * alpha^nu * G)) * (rr / r0)^(-(qnu+nu))
 
 	Mellnu = make_Mellnu(tt, alpha, ell, 0; q=qnu)
 
