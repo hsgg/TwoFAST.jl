@@ -182,9 +182,9 @@ function make_Mellnu(tt, alpha, ell, nu; q=0)
 	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(mylgamma((1 + ell + n) / 2)
 		- mylgamma((2 + ell - n) / 2))
 	A = alpha.^(im*tt - q + nu)
-	#println("n: $(n[2])")
-	#println("intjlttn: $(intjlttn[2])")
-	#println("A: $(A[2])")
+	#println("n: $(n[1])")
+	#println("intjlttn: $(intjlttn[1])")
+	#println("A: $(A[1])")
 	return A .* intjlttn
 end
 
@@ -1789,8 +1789,11 @@ function xicalc{T,Tq}(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000
 	#println(N)
 	#println(typeof(pkfn))
 	#println(length(phi))
+	#println(all(isfinite.(phi)))
 	#println(length(Mellnu))
+	#println(all(isfinite.(Mellnu)))
 	#println(length(prefac))
+	#println(all(isfinite.(prefac)))
 	xi = prefac .* brfft(phi .* Mellnu, N)
 
 	return rr, xi
