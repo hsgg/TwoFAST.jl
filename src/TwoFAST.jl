@@ -306,19 +306,80 @@ function calc_f0_dl4(R, n; Rcrit=0.1)
 	return [f000fn4(1-n), f010fn4(n)]
 end
 
+# Use Miller's algorithm
+function calc_f000_fm1m1m2_ell0_dl0m1{T}(R::T, n::Complex{T}, dl::Integer)
+	if dl == 0
+		f000fna(m) = 1/(2m*R) * ((1+R)^m - (1-R)^m)
+		fm1m1m2fna(m) = 1/2 * ((1 - m*R)*(1+R)^m + (1 + m*R)*(1-R)^m)
+		f000 = f000fna(1-n)
+		fm1m1m2 = fm1m1m2fna(1-n)
+	elseif dl == -1
+		f000fnb(m) = 1/2 * ((1+R)^m + (1-R)^m)
+		fm1m1m2fnb(m) = 1/6 * ((3 - 3m*R - (1-m^2)*R^2)*(1+R)^m
+				  + (3 + 3m*R - (1-m^2)*R^2)*(1-R)^m)
+		f000 = f000fnb(1-n)
+		fm1m1m2 = fm1m1m2fnb(1-n)
+	else
+		error("dl=$dl not implemented, R=$R, n=$n")
+	end
+	return [fm1m1m2, f000]
+end
 
-function calc_f0{T}(R::T, n, dl; use_arb=false)
+function BCDEfn_dl{T}(R::T, n::Complex{T}, dl::Integer)
+	# Our implementation of Miller's alg gives us where we wnat to go, not
+	# where we start:
+	dl = dl + 2
+	ell = 0
+	a = 0.5n + 0.5dl
+	b = ell + 0.5 + a
+	c = ell + 1.5 + dl
+	z = R^2
+	B = 1 - (a * (c-b) + b * (c-a) - 3c + 4) / ((c-2) * (c-4)) * z
+	C = -(c-1-a) * z * (c-1-b) * z * (a-1) * (b-1) / ((c-1) * (c-2)^2 * (c-3))
+	D = Complex{T}(1)
+	E = Complex{T}(0)
+	return B, C, D, E
+end
+
+function calc_f000_f0m10_ell0{T}(R::T, n::Complex{T}, dl::Integer)
+	f0 = calc_f000_fm1m1m2_ell0_dl0m1(R, n, isodd(dl) ? -1 : 0)
+	z = R^2
+	fasymp = [Complex{T}((1-z/2)/2 + sqrt(1-z)/2), Complex{T}(1)]
+	BCfn(dl2) = BCDEfn_dl(R, n, 2dl2)
+	dl2max = ceil(Int, dl/2 - 1/4)  # the 1/4 combats round-off
+	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp)
+	fm1m1m2, f000 = fn
+	@assert nmax == dl2max
+	ell = 0
+	a = 0.5n + 0.5dl
+	b = ell + 0.5 + a
+	c = ell + 1.5 + dl
+	oobomz = 1 / (b * (1-z))
+	f010 = ((c-1) * oobomz * fm1m1m2
+		+ ((2b - c + (a-b) * z) * oobomz
+		   - (c - 2 - (c-1-a) * z) * oobomz * (b-1) / (c-2)) * f000)
+	return [f000, f010]
+end
+
+
+function calc_f0{T}(R::T, n::Complex{T}, dl::Integer; use_arb=false)
+	fn = calc_f000_f0m10_ell0(R, n, dl)
+	return fn
+	println("fn: $fn")
 	if n + dl == 0 && !use_arb
 		return [Complex{T}(1), Complex{T}(1)]
 	end
-	#R = sqrt(T(R^2))
 	if dl == 0 && !use_arb
 		f000fn(s) = ((1+R)^s - (1-R)^s) / (2 * R * s)
 		f010fn(s) = ((s+R) * (1+R)^-s - (s-R) * (1-R)^-s) / (2 * (1-s) * (1+s) * R)
-		return [f000fn(1-n), f010fn(n)]
+		f = [f000fn(1-n), f010fn(n)]
+		println("f0: $f")
+		return f
 	elseif dl == 4 && !use_arb
-		return Array{Complex128}(calc_f0_dl4(BigFloat(R), Complex{BigFloat}(n);
+		f = Array{Complex128}(calc_f0_dl4(BigFloat(R), Complex{BigFloat}(n);
 			Rcrit=0))
+		println("f4: $f")
+		return f
 	else
 		error("dl=$dl not implemented, R=$R, n=$n")
 	end

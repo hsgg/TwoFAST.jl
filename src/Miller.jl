@@ -4,9 +4,7 @@ export calc_fn
 
 
 import Base.realmin
-function realmin(arr::Array)
-    return realmin(typeof(real(arr[1])))
-end
+realmin(arr::Array) = realmin(typeof(real(arr[1])))
 
 
 function calc_Amn_back(nbegin, nend, BCfn)
