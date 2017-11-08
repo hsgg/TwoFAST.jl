@@ -345,9 +345,12 @@ function calc_f000_f0m10_ell0{T}(R::T, n::Complex{T}, dl::Integer)
 	f0 = calc_f000_fm1m1m2_ell0_dl0m1(R, n, isodd(dl) ? -1 : 0)
 	z = R^2
 	fasymp = [Complex{T}((1-z/2)/2 + sqrt(1-z)/2), Complex{T}(1)]
+	lam1lam2 = ((1-R^2/2)-sqrt(1-R^2)) / ((1-R^2/2)+sqrt(1-R^2))
+	ndiffmin = max(1, ceil(Int, -log(1e1) / log(lam1lam2)))
+	println("ndiffmin(dl): $ndiffmin")
 	BCfn(dl2) = BCDEfn_dl(R, n, 2dl2)
 	dl2max = ceil(Int, dl/2 - 1/4)  # the 1/4 combats round-off
-	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp, fmax_tol=1e-10)
+	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp, ndiffmin, fmax_tol=1e-10)
 	fm1m1m2, f000 = fn
 	@assert nmax == dl2max
 	ell = 0
@@ -378,7 +381,7 @@ function calc_f0{T}(R::T, n::Complex{T}, dl::Integer; use_arb=false)
 	elseif dl == 4 && !use_arb
 		f = Array{Complex128}(calc_f0_dl4(BigFloat(R), Complex{BigFloat}(n);
 			Rcrit=0))
-		println("f4: $f")
+		println("f4: $f,  diff=$(f-fn)")
 		return f
 	else
 		error("dl=$dl not implemented, R=$R, n=$n")
@@ -468,8 +471,15 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 			warn("f0:  $f0")
 			error("Matchpoint could not be calculated")
 		end
+		ndiffmin = max(1, ceil(Int, -0.5log(1e1) / log(R)))
 		fasymp = [Complex{T}(1), Complex{T}(1)]
-		fell, ell = calc_fn(ell, BCfn, f0, fasymp)
+		println("R: $R")
+		println("n: $n")
+		println("dl: $dl")
+		println("alpha: $alpha")
+		println("f0:     $f0")
+		println("ndiffmin: $ndiffmin")
+		fell, ell = calc_fn(ell, BCfn, f0, fasymp, ndiffmin)
 	end
 
 	#println()

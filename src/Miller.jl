@@ -35,21 +35,23 @@ function scale_seed!(fmatch, A, fseed)
 end
 
 
-function calc_fseed(nseed, BCfn, f0, fasymp)
+function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
     A = calc_Amn_back(nseed, 0, BCfn)
 
     if !all(isfinite.(A))
         # A not being finite means we hit the underflow gap.
-        #println("A not finite (ellseed=$ellseed)")
-        return typeof(f0)([Inf, Inf])
+        println("===> A not finite (ellseed=$ellseed)")
+        return T([Inf, Inf])
     end
 
     if det(A) == 0 || !all(isfinite.(inv(A)))
         # inv(A) having infinite elements does not necessarily mean we
         # hit the underflow gap! It just means the forward recursion is
         # unstable.
+        println("===> Returning asymptote")
         fseed = deepcopy(fasymp)
     else
+        println("===> estimating fmax")
         fseed = A \ f0
     end
 
@@ -59,8 +61,9 @@ function calc_fseed(nseed, BCfn, f0, fasymp)
 end
 
 
-function calc_fmax_fn(nmax, BCfn, f0, fasymp; fmax_tol=1e-10, imax=20000,
-                      growth=:exponential, ndiff=10)
+function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff;
+                      fmax_tol=1e-10, imax=20000,
+                      growth=:linear)
     fmax = deepcopy(fasymp)
     rdiff = 1.0
     nseed = nmax
@@ -70,8 +73,12 @@ function calc_fmax_fn(nmax, BCfn, f0, fasymp; fmax_tol=1e-10, imax=20000,
         fseed = calc_fseed(nseed, BCfn, f0, fasymp)
         fmaxnew = calc_Amn_back(nseed, nmax, BCfn) * fseed
         rdiff = norm(fmaxnew - fmax) / norm(fmaxnew)
+        println("nseed:   $nseed")
+        println("fseed:   $fseed")
+        println("fmax:    $fmax")
+        println("fmaxnew: $fmaxnew")
+        println("rdiff:   $rdiff")
         fmax[:] = fmaxnew
-        println("nseed: $nseed")
         if growth == :exponential
             ndiff = ceil(Int, 1.5*ndiff)
         elseif growth != :linear
@@ -115,20 +122,20 @@ function calc_underflow_fmax(nmax, calc_f, fasymp)
         println("WARN nmin=$nmin, nmax=$nmax")
         println("WARN fmax = $fmax")
         println("WARN abs(fmax) = $(abs.(fmax))")
-        warn("Assumption may be violated: Result is not close to zero")
+        error("Assumption may be violated: Result is not close to zero")
     end
     return fmax, nmin
 end
 
 
-function calc_fn(n, BCfn::Function, f0, fasymp; calc_fmax=calc_fmax_fn,
-                fmax_tol=1e-10)
-    fn = calc_fmax(n, BCfn, f0, fasymp, fmax_tol=fmax_tol)
-    #println("fn: $fn")
-    #exit(1)
+function calc_fn{T}(n, BCfn::Function, f0::T, fasymp::T, ndiffmin;
+                 calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
+    fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, fmax_tol=fmax_tol)
+    println("calc_fn: $fn")
     if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
-        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp; growth=:linear, ndiff=1,
-                             fmax_tol=fmax_tol)
+        println("===> starting bisection")
+        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, ndiffmin; growth=:linear,
+                              fmax_tol=fmax_tol)
         fn, n = calc_underflow_fmax(n, calc_f, fasymp)
     end
     if !all(isfinite.(fn))
