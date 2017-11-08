@@ -71,6 +71,7 @@ function calc_fmax_fn(nmax, BCfn, f0, fasymp; fmax_tol=1e-10, imax=20000,
         fmaxnew = calc_Amn_back(nseed, nmax, BCfn) * fseed
         rdiff = norm(fmaxnew - fmax) / norm(fmaxnew)
         fmax[:] = fmaxnew
+        println("nseed: $nseed")
         if growth == :exponential
             ndiff = ceil(Int, 1.5*ndiff)
         elseif growth != :linear
@@ -82,8 +83,7 @@ function calc_fmax_fn(nmax, BCfn, f0, fasymp; fmax_tol=1e-10, imax=20000,
     end
     if imax == 0
         println("nmax:   $nmax")
-        println("nmatch: $nmatch")
-        println("fmatch: $fmatch")
+        println("f0:     $f0")
         println("fmax_tol: $fmax_tol")
         println("imax: $imax")
         error("Maximum iterations reached!")
@@ -121,10 +121,14 @@ function calc_underflow_fmax(nmax, calc_f, fasymp)
 end
 
 
-function calc_fn(n, BCfn::Function, f0, fasymp; calc_fmax=calc_fmax_fn)
-    fn = calc_fmax(n, BCfn, f0, fasymp)
+function calc_fn(n, BCfn::Function, f0, fasymp; calc_fmax=calc_fmax_fn,
+                fmax_tol=1e-10)
+    fn = calc_fmax(n, BCfn, f0, fasymp, fmax_tol=fmax_tol)
+    #println("fn: $fn")
+    #exit(1)
     if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
-        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp; growth=:linear, ndiff=1)
+        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp; growth=:linear, ndiff=1,
+                             fmax_tol=fmax_tol)
         fn, n = calc_underflow_fmax(n, calc_f, fasymp)
     end
     if !all(isfinite.(fn))

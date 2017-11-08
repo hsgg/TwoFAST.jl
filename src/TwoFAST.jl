@@ -347,7 +347,7 @@ function calc_f000_f0m10_ell0{T}(R::T, n::Complex{T}, dl::Integer)
 	fasymp = [Complex{T}((1-z/2)/2 + sqrt(1-z)/2), Complex{T}(1)]
 	BCfn(dl2) = BCDEfn_dl(R, n, 2dl2)
 	dl2max = ceil(Int, dl/2 - 1/4)  # the 1/4 combats round-off
-	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp)
+	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp, fmax_tol=1e-10)
 	fm1m1m2, f000 = fn
 	@assert nmax == dl2max
 	ell = 0
@@ -364,8 +364,8 @@ end
 
 function calc_f0{T}(R::T, n::Complex{T}, dl::Integer; use_arb=false)
 	fn = calc_f000_f0m10_ell0(R, n, dl)
-	return fn
 	println("fn: $fn")
+	return fn
 	if n + dl == 0 && !use_arb
 		return [Complex{T}(1), Complex{T}(1)]
 	end
@@ -449,7 +449,8 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 	if R == 0 && ell+dl != 0
 		return fnull, ell
 	elseif R == 1
-		calc_fmax_unity(ell, BCfn, f0, fasymp; growth=:a, ndiff=0) = begin
+		calc_fmax_unity(ell, BCfn, f0, fasymp; growth=:a, ndiff=0,
+				fmax_tol=1e-10) = begin
 			calc_Mll_unity(ell, n, dl, alpha)
 		end
 		fell, ell = calc_fn(ell, BCfn, fnull, fnull; calc_fmax=calc_fmax_unity)
