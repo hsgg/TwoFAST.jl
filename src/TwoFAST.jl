@@ -345,12 +345,11 @@ function calc_f000_f0m10_ell0{T}(R::T, n::Complex{T}, dl::Integer)
 	f0 = calc_f000_fm1m1m2_ell0_dl0m1(R, n, isodd(dl) ? -1 : 0)
 	z = R^2
 	fasymp = [Complex{T}((1-z/2)/2 + sqrt(1-z)/2), Complex{T}(1)]
-	lam1lam2 = ((1-R^2/2)-sqrt(1-R^2)) / ((1-R^2/2)+sqrt(1-R^2))
-	ndiffmin = max(1, ceil(Int, -log(1e1) / log(lam1lam2)))
-	println("ndiffmin(dl): $ndiffmin")
+	laminf1 = ((1 - z / 2) - sqrt(1 - z)) / 2
+	laminf2 = ((1 - z / 2) + sqrt(1 - z)) / 2
 	BCfn(dl2) = BCDEfn_dl(R, n, 2dl2)
 	dl2max = ceil(Int, dl/2 - 1/4)  # the 1/4 combats round-off
-	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp, ndiffmin, fmax_tol=1e-10)
+	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp, laminf1, laminf2, fmax_tol=1e-13)
 	fm1m1m2, f000 = fn
 	@assert nmax == dl2max
 	ell = 0
@@ -452,11 +451,12 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 	if R == 0 && ell+dl != 0
 		return fnull, ell
 	elseif R == 1
-		calc_fmax_unity(ell, BCfn, f0, fasymp; growth=:a, ndiff=0,
-				fmax_tol=1e-10) = begin
-			calc_Mll_unity(ell, n, dl, alpha)
+		calc_fmax_unity(ell) = calc_Mll_unity(ell, n, dl, alpha)
+		fell = calc_fmax_unity(ell)
+		if !all(isfinite.(fell)) || norm(fell) < Miller.realmin(fell)
+			fell, ell = calc_underflow_fmax(ell, calc_fmax_unity,
+							fnull)
 		end
-		fell, ell = calc_fn(ell, BCfn, fnull, fnull; calc_fmax=calc_fmax_unity)
 	else
 		B0 = Mellell_pre(0, 0+dl, R, n, alpha)
 		f21 = calc_f0(R, n, dl)
@@ -471,25 +471,21 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 			warn("f0:  $f0")
 			error("Matchpoint could not be calculated")
 		end
-		ndiffmin = max(1, ceil(Int, -0.5log(1e1) / log(R)))
+		laminf1 = R
+		laminf2 = 1 / R
 		fasymp = [Complex{T}(1), Complex{T}(1)]
 		println("R: $R")
 		println("n: $n")
 		println("dl: $dl")
 		println("alpha: $alpha")
 		println("f0:     $f0")
-		println("ndiffmin: $ndiffmin")
-		fell, ell = calc_fn(ell, BCfn, f0, fasymp, ndiffmin)
+		println("laminf1: $laminf1")
+		println("laminf2: $laminf2")
+		fell, ell = calc_fn(ell, BCfn, f0, fasymp, laminf1, laminf2)
 	end
 
-	#println()
-	#println("fell: $fell")
-	#println("fold: $fold")
-	#println("fell-fold: $(fell-fold)")
-	#println("ell: $ell")
-	#println("old: $lold")
-	#print("Continue? ")
-	#readline()
+	println("fell: $fell")
+	println("ell: $ell")
 	return fell, ell
 end
 
