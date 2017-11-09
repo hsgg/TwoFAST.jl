@@ -92,7 +92,7 @@ function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
 
     if !all(isfinite.(A))
         # A not being finite means we hit the underflow gap.
-        println("===> A not finite (ellseed=$ellseed)")
+        println("===> A not finite (nseed=$nseed)")
         return T([Inf, Inf])
     end
 
