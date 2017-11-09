@@ -40,6 +40,29 @@ function find_nseedmin(laminf1, laminf2, BCfn; fracdist=1/2.1)
 end
 
 
+# find_nseedmin():
+#   This function finds a minimum nseed s.t. an error of order 1e16 dies out
+#   when reaching 'nmax'.
+function find_nseedmin2(nmax, BCfn)
+    nseed = nmax
+    r = 1.0
+    while r > 1e-5
+        nseed += 1
+        B, C, D, E = BCfn(nseed)
+        lam1, lam2 = eigvals([B C; D E])
+        #println("$nseed($r): $lam1\t$lam2")
+        al1 = abs(lam1)
+        al2 = abs(lam2)
+        if al1 > al2
+            r *= al2 / al1
+        else
+            r *= al1 / al2
+        end
+    end
+    return nseed
+end
+
+
 # get_ndiffmin():
 #   Calculate the number of iterations over which an error of order 1e16 dies
 #   out.
@@ -114,7 +137,7 @@ end
 
 
 function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
-                      fmax_tol=1e-10, imax=20, growth=:linear)
+                      fmax_tol=1e-10, imax=200000, growth=:linear)
     fmax = deepcopy(fasymp)
     rdiff = 1.0
     nseed = max(nmax, nminseed)
@@ -183,6 +206,12 @@ function calc_fn{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
                     calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
     ndiffmin = get_ndiffmin(laminf1, laminf2)
     nminseed = find_nseedmin(laminf1, laminf2, BCfn)
+    println("ndiffmin: $ndiffmin")
+    println("nminseed: $nminseed")
+    ndiffmin = 1
+    nminseed = find_nseedmin2(0, BCfn)
+    println("ndiffmin: $ndiffmin")
+    println("nminseed: $nminseed")
     fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed, fmax_tol=fmax_tol)
     println("calc_fn: $fn")
     if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
