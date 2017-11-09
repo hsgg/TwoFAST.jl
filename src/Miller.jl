@@ -4,7 +4,59 @@ export calc_fn
 
 
 import Base.realmin
-realmin(arr::Array) = realmin(typeof(real(arr[1])))
+realmin(arr) = realmin(typeof(real(arr[1])))
+
+
+# find_nseedmin():
+#   This function finds an 'n' s.t. the approximatio n -> infty is valid.
+#   We do this by testing that the eigenvalues are close to each other.
+#   Specifically, we ensure that the eigenvalues are within an annulus in the
+#   complex plane, where the radius of the annulus has a radius 'fracdist'
+#   times the distance between the eigenvectors at infinity.
+function find_nseedmin(laminf1, laminf2, BCfn; fracdist=1/2.1)
+    rmax = fracdist * abs(laminf1 - laminf2)
+    println("laminf: $laminf1\t$laminf2")
+    println("rmax: $rmax")
+
+    # test whether we are in the 'n->infty' limit:
+    wearedone(n) = begin
+        B, C, D, E = BCfn(n)
+        lam1, lam2 = eigvals([B C; D E])
+        println("$n: $lam1\t$lam2")
+        if abs(lam1 - laminf1) < rmax && abs(lam2 - laminf2) < rmax
+            return true
+        elseif abs(lam2 - laminf1) < rmax && abs(lam1 - laminf2) < rmax
+            return true
+        end
+        return false
+    end
+
+    # increase 'n' until we reach a satisfactory point:
+    n = 0
+    while !wearedone(n)
+        n = max(1, ceil(Int, 1.1n))
+    end
+    return n
+end
+
+
+# get_ndiffmin():
+#   Calculate the number of iterations over which an error of order 1e16 dies
+#   out.
+function get_ndiffmin(laminf1, laminf2)
+    al1 = abs(laminf1)
+    al2 = abs(laminf2)
+    if al1 > al2
+        r = al2 / al1
+    else
+        r = al1 / al2
+    end
+    @assert r != 1
+    println("laminf: $laminf1\t$laminf2")
+    prec = eps(typeof(real(laminf1)))
+    dn = ceil(Int, log(prec) / log(r))
+    return max(1, dn)
+end
 
 
 function calc_Amn_back(nbegin, nend, BCfn)
@@ -61,12 +113,11 @@ function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
 end
 
 
-function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff;
-                      fmax_tol=1e-10, imax=20000,
-                      growth=:linear)
+function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
+                      fmax_tol=1e-10, imax=20, growth=:linear)
     fmax = deepcopy(fasymp)
     rdiff = 1.0
-    nseed = nmax
+    nseed = max(nmax, nminseed)
     while rdiff > fmax_tol && imax > 0
         imax -= 1
         nseed += ndiff
@@ -128,14 +179,16 @@ function calc_underflow_fmax(nmax, calc_f, fasymp)
 end
 
 
-function calc_fn{T}(n, BCfn::Function, f0::T, fasymp::T, ndiffmin;
-                 calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
-    fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, fmax_tol=fmax_tol)
+function calc_fn{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
+                    calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
+    ndiffmin = get_ndiffmin(laminf1, laminf2)
+    nminseed = find_nseedmin(laminf1, laminf2, BCfn)
+    fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed, fmax_tol=fmax_tol)
     println("calc_fn: $fn")
     if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
         println("===> starting bisection")
-        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, ndiffmin; growth=:linear,
-                              fmax_tol=fmax_tol)
+        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed;
+                              growth=:linear, fmax_tol=fmax_tol)
         fn, n = calc_underflow_fmax(n, calc_f, fasymp)
     end
     if !all(isfinite.(fn))
