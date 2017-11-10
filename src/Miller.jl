@@ -15,14 +15,14 @@ realmin(arr) = realmin(typeof(real(arr[1])))
 #   times the distance between the eigenvectors at infinity.
 function find_nseedmin(laminf1, laminf2, BCfn; fracdist=1/2.1)
     rmax = fracdist * abs(laminf1 - laminf2)
-    println("laminf: $laminf1\t$laminf2")
-    println("rmax: $rmax")
+    #println("laminf: $laminf1\t$laminf2")
+    #println("rmax: $rmax")
 
     # test whether we are in the 'n->infty' limit:
     wearedone(n) = begin
         B, C, D, E = BCfn(n)
         lam1, lam2 = eigvals([B C; D E])
-        println("$n: $lam1\t$lam2")
+        #println("$n: $lam1\t$lam2")
         if abs(lam1 - laminf1) < rmax && abs(lam2 - laminf2) < rmax
             return true
         elseif abs(lam2 - laminf1) < rmax && abs(lam1 - laminf2) < rmax
@@ -75,7 +75,7 @@ function get_ndiffmin(laminf1, laminf2)
         r = al1 / al2
     end
     @assert r != 1
-    println("laminf: $laminf1\t$laminf2")
+    #println("laminf: $laminf1\t$laminf2")
     prec = eps(typeof(real(laminf1)))
     dn = ceil(Int, log(prec) / log(r))
     return max(1, dn)
@@ -115,7 +115,7 @@ function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
 
     if !all(isfinite.(A))
         # A not being finite means we hit the underflow gap.
-        println("===> A not finite (nseed=$nseed)")
+        #println("===> A not finite (nseed=$nseed)")
         return T([Inf, Inf])
     end
 
@@ -123,10 +123,10 @@ function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
         # inv(A) having infinite elements does not necessarily mean we
         # hit the underflow gap! It just means the forward recursion is
         # unstable.
-        println("===> Returning asymptote")
+        #println("===> Returning asymptote")
         fseed = deepcopy(fasymp)
     else
-        println("===> estimating fmax")
+        #println("===> estimating fmax")
         fseed = A \ f0
     end
 
@@ -147,11 +147,11 @@ function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
         fseed = calc_fseed(nseed, BCfn, f0, fasymp)
         fmaxnew = calc_Amn_back(nseed, nmax, BCfn) * fseed
         rdiff = norm(fmaxnew - fmax) / norm(fmaxnew)
-        println("nseed:   $nseed")
-        println("fseed:   $fseed")
-        println("fmax:    $fmax")
-        println("fmaxnew: $fmaxnew")
-        println("rdiff:   $rdiff")
+        #println("nseed:   $nseed")
+        #println("fseed:   $fseed")
+        #println("fmax:    $fmax")
+        #println("fmaxnew: $fmaxnew")
+        #println("rdiff:   $rdiff")
         fmax[:] = fmaxnew
         if growth == :exponential
             ndiff = ceil(Int, 1.5*ndiff)
@@ -179,7 +179,7 @@ function calc_underflow_fmax(nmax, calc_f)
     # ensure we pass on the error when we find no solution:
     fmax = Array{Complex128}([NaN, NaN])
     while nmid != nmin && nmid != nmax
-        println("==>$nmid:")
+        #println("==>$nmid:")
         fnew = calc_f(nmid)
         if !all(isfinite.(fnew)) || norm(fnew) < realmin(fnew)
             nmax = nmid
@@ -187,7 +187,7 @@ function calc_underflow_fmax(nmax, calc_f)
             nmin = nmid
             fmax = fnew
         end
-        println("<==$nmid: $nmin<n<$nmax, $fnew")
+        #println("<==$nmid: $nmin<n<$nmax, $fnew")
         nmid = div(nmin + nmax, 2)
     end
     if all(isfinite.(fmax)) && maximum(abs.(fmax)) > 1e-100
@@ -205,12 +205,12 @@ end
 
 function calc_fn_nseed{T}(n, BCfn::Function, f0::T, fasymp::T, ndiffmin, nminseed;
                           calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
-    println("ndiffmin: $ndiffmin")
-    println("nminseed: $nminseed")
+    #println("ndiffmin: $ndiffmin")
+    #println("nminseed: $nminseed")
     fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed, fmax_tol=fmax_tol)
-    println("miller: $fn")
+    #println("miller: $fn")
     if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
-        println("===> starting bisection, first")
+        #println("===> starting bisection, first")
         calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed;
                               growth=:linear, fmax_tol=fmax_tol)
         fn, n = calc_underflow_fmax(n, calc_f)
@@ -231,7 +231,7 @@ function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
     end
 
     # try heuristic
-    println("Trying heuristic")
+    #println("Trying heuristic")
     ndiffmin = 1
     nminseed = find_nseedmin2(0, BCfn)
     fn2, n2 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin, nminseed;

@@ -366,7 +366,7 @@ end
 
 function calc_f0{T}(R::T, n::Complex{T}, dl::Integer; use_arb=false)
 	fn = calc_f000_f0m10_ell0(R, n, dl)
-	println("fn: $fn")
+	#println("fn: $fn")
 	return fn
 	if n + dl == 0 && !use_arb
 		return [Complex{T}(1), Complex{T}(1)]
@@ -473,18 +473,18 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 		laminf1 = R
 		laminf2 = 1 / R
 		fasymp = [Complex{T}(1), Complex{T}(1)]
-		println("R: $R")
-		println("n: $n")
-		println("dl: $dl")
-		println("alpha: $alpha")
-		println("f0:     $f0")
-		println("laminf1: $laminf1")
-		println("laminf2: $laminf2")
+		#println("R: $R")
+		#println("n: $n")
+		#println("dl: $dl")
+		#println("alpha: $alpha")
+		#println("f0:     $f0")
+		#println("laminf1: $laminf1")
+		#println("laminf2: $laminf2")
 		fell, ell = miller(ell, BCfn, f0, fasymp, laminf1, laminf2)
 	end
 
-	println("fell: $fell")
-	println("ell: $ell")
+	#println("fell: $fell")
+	#println("ell: $ell")
 	return fell, ell
 end
 
