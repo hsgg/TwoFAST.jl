@@ -185,7 +185,7 @@ function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
             return fseed
         end
     end
-    if imax == 0
+    if imax == 0 && rdiff > fmax_tol
         warn("nmax:  $nmax")
         warn("nseed: $nseed")
         warn("f0: $f0")
