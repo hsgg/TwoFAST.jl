@@ -46,7 +46,7 @@ end
 function find_nseedmin2(nmax, BCfn)
     nseed = nmax
     r = 1.0
-    while r > 1e-5
+    while r > 1e-10
         nseed += 1
         B, C, D, E = BCfn(nseed)
         lam1, lam2 = eigvals([B C; D E])
@@ -60,6 +60,28 @@ function find_nseedmin2(nmax, BCfn)
         end
     end
     return nseed
+end
+
+
+# estimate_prec_loss():
+#   This function estimates the loss of precision by multiplying the ratio of
+#   eigenvalues.
+function estimate_prec_loss(nmax, BCfn)
+    r = 1.0
+    while nmax > 0
+        B, C, D, E = BCfn(nmax)
+        lam1, lam2 = eigvals([B C; D E])
+        #println("$nseed($r): $lam1\t$lam2")
+        al1 = abs(lam1)
+        al2 = abs(lam2)
+        if al1 > al2
+            r *= al2 / al1
+        else
+            r *= al1 / al2
+        end
+        nmax -= 1
+    end
+    return r
 end
 
 
@@ -112,6 +134,7 @@ end
 
 function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
     A = calc_Amn_back(nseed, 0, BCfn)
+    #println("===> A: $A")
 
     if !all(isfinite.(A))
         # A not being finite means we hit the underflow gap.
@@ -137,7 +160,7 @@ end
 
 
 function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
-                      fmax_tol=1e-10, imax=200000, growth=:linear)
+                      fmax_tol=1e-10, imax=20, growth=:exponential)
     fmax = deepcopy(fasymp)
     rdiff = 1.0
     nseed = max(nmax, nminseed)
@@ -163,11 +186,13 @@ function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
         end
     end
     if imax == 0
-        println("nmax:   $nmax")
-        println("f0:     $f0")
-        println("fmax_tol: $fmax_tol")
-        println("imax: $imax")
-        error("Maximum iterations reached!")
+        warn("nmax:  $nmax")
+        warn("nseed: $nseed")
+        warn("f0: $f0")
+        warn("fmax_tol: $fmax_tol")
+        warn("rdiff: $rdiff")
+        warn("imax: $imax")
+        warn("Maximum iterations reached!")
     end
     return fmax
 end
@@ -191,29 +216,32 @@ function calc_underflow_fmax(nmax, calc_f)
         nmid = div(nmin + nmax, 2)
     end
     if all(isfinite.(fmax)) && maximum(abs.(fmax)) > 1e-100
-        println("WARN nmax=$nmax")
-        println("WARN calc_f=$calc_f")
-        println("WARN fasymp=$fasymp")
-        println("WARN nmin=$nmin, nmax=$nmax")
-        println("WARN fmax = $fmax")
-        println("WARN abs(fmax) = $(abs.(fmax))")
-        error("Assumption may be violated: Result is not close to zero")
+        warn("nmax=$nmax")
+        warn("calc_f=$calc_f")
+        warn("nmin=$nmin, nmax=$nmax")
+        warn("fmax = $fmax")
+        warn("abs(fmax) = $(abs.(fmax))")
+        warn("Assumption may be violated: Result is not close to zero")
+        return Array{Complex128}([NaN, NaN]), nmin
     end
     return fmax, nmin
 end
 
 
 function calc_fn_nseed{T}(n, BCfn::Function, f0::T, fasymp::T, ndiffmin, nminseed;
-                          calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
+                          calc_fmax=calc_fmax_fn, fmax_tol=1e-10, imax=20,
+                         growth=:linear)
     #println("ndiffmin: $ndiffmin")
     #println("nminseed: $nminseed")
-    fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed, fmax_tol=fmax_tol)
+    fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed, fmax_tol=fmax_tol,
+                   imax=imax, growth=growth)
     #println("miller: $fn")
     if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
-        #println("===> starting bisection, first")
+        #println("===> starting bisection")
         calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed;
-                              growth=:linear, fmax_tol=fmax_tol)
+                              growth=:linear, fmax_tol=fmax_tol, imax=imax)
         fn, n = calc_underflow_fmax(n, calc_f)
+        #println("miller: $fn, $n")
     end
     return fn, n
 end
@@ -221,34 +249,45 @@ end
 
 function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
                     calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
+    #esterr = estimate_prec_loss(n, BCfn)
+    #println("esterr($n): ", esterr)
+
     # try direct method
-    ndiffmin = get_ndiffmin(laminf1, laminf2)
-    nminseed = find_nseedmin(laminf1, laminf2, BCfn)
-    fn1, n1 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin, nminseed;
-                            calc_fmax=calc_fmax, fmax_tol=fmax_tol)
+    ndiffmin1 = get_ndiffmin(laminf1, laminf2)
+    nminseed1 = find_nseedmin(laminf1, laminf2, BCfn)
+    #println("esterr($nminseed1): ", estimate_prec_loss(nminseed1, BCfn))
+    fn1, n1 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin1, nminseed1;
+                            calc_fmax=calc_fmax, fmax_tol=fmax_tol, imax=4,
+                            growth=:linear)
     if all(isfinite.(fn1))
         return fn1, n1
     end
 
     # try heuristic
-    #println("Trying heuristic")
-    ndiffmin = 1
-    nminseed = find_nseedmin2(0, BCfn)
-    fn2, n2 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin, nminseed;
-                            calc_fmax=calc_fmax, fmax_tol=fmax_tol)
+    #println("===> Trying heuristic")
+    ndiffmin2 = 1
+    nminseed2 = 0  #find_nseedmin2(0, BCfn)
+    #println("esterr($nminseed2): ", estimate_prec_loss(nminseed2, BCfn))
+    fn2, n2 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin2, nminseed2;
+                            calc_fmax=calc_fmax, fmax_tol=fmax_tol,
+                            imax=10ndiffmin1, growth=:exponential)
     if all(isfinite.(fn2))
         return fn2, n2
     end
 
-    println("ERROR at n=$n")
-    println("n1: $n1")
-    println("n2: $n2")
-    println("BCfn: $BCfn")
-    println("f0:  $f0")
-    println("fn1: $fn1")
-    println("fn2: $fn2")
-    println("fasymp: $fasymp")
-    error("Initial value could not be calculated!")
+    warn("ERROR at n=$n")
+    warn("n1: $n1")
+    warn("n2: $n2")
+    warn("ndiffmin1: $ndiffmin1")
+    warn("nminseed1: $nminseed1")
+    warn("ndiffmin2: $ndiffmin2")
+    warn("nminseed2: $nminseed2")
+    warn("BCfn: $BCfn")
+    warn("f0:  $f0")
+    warn("fn1: $fn1")
+    warn("fn2: $fn2")
+    warn("fasymp: $fasymp")
+    warn("Initial value could not be calculated!")
     return fn1, n1
 end
 
