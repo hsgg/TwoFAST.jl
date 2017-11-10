@@ -164,7 +164,8 @@ function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
     fmax = deepcopy(fasymp)
     rdiff = 1.0
     nseed = max(nmax, nminseed)
-    while rdiff > fmax_tol && imax > 0
+    i = imax
+    while rdiff > fmax_tol && i > 0
         imax -= 1
         nseed += ndiff
         fseed = calc_fseed(nseed, BCfn, f0, fasymp)
@@ -185,13 +186,13 @@ function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
             return fseed
         end
     end
-    if imax == 0 && rdiff > fmax_tol
+    if i == 0 && rdiff > fmax_tol
         warn("nmax:  $nmax")
         warn("nseed: $nseed")
         warn("f0: $f0")
         warn("fmax_tol: $fmax_tol")
         warn("rdiff: $rdiff")
-        warn("imax: $imax")
+        warn("imax,i: $imax,$i")
         warn("Maximum iterations reached!")
     end
     return fmax
@@ -257,7 +258,7 @@ function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
     nminseed1 = find_nseedmin(laminf1, laminf2, BCfn)
     #println("esterr($nminseed1): ", estimate_prec_loss(nminseed1, BCfn))
     fn1, n1 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin1, nminseed1;
-                            calc_fmax=calc_fmax, fmax_tol=fmax_tol, imax=4,
+                            calc_fmax=calc_fmax, fmax_tol=fmax_tol, imax=10,
                             growth=:linear)
     if all(isfinite.(fn1))
         return fn1, n1
