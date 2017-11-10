@@ -349,7 +349,7 @@ function calc_f000_f0m10_ell0{T}(R::T, n::Complex{T}, dl::Integer)
 	laminf2 = ((1 - z / 2) + sqrt(1 - z)) / 2
 	BCfn(dl2) = BCDEfn_dl(R, n, 2dl2)
 	dl2max = ceil(Int, dl/2 - 1/4)  # the 1/4 combats round-off
-	fn, nmax = calc_fn(dl2max, BCfn, f0, fasymp, laminf1, laminf2, fmax_tol=1e-13)
+	fn, nmax = miller(dl2max, BCfn, f0, fasymp, laminf1, laminf2, fmax_tol=1e-13)
 	fm1m1m2, f000 = fn
 	@assert nmax == dl2max
 	ell = 0
@@ -454,8 +454,7 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 		calc_fmax_unity(ell) = calc_Mll_unity(ell, n, dl, alpha)
 		fell = calc_fmax_unity(ell)
 		if !all(isfinite.(fell)) || norm(fell) < Miller.realmin(fell)
-			fell, ell = calc_underflow_fmax(ell, calc_fmax_unity,
-							fnull)
+			fell, ell = Miller.calc_underflow_fmax(ell, calc_fmax_unity)
 		end
 	else
 		B0 = Mellell_pre(0, 0+dl, R, n, alpha)
@@ -481,7 +480,7 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 		println("f0:     $f0")
 		println("laminf1: $laminf1")
 		println("laminf2: $laminf2")
-		fell, ell = calc_fn(ell, BCfn, f0, fasymp, laminf1, laminf2)
+		fell, ell = miller(ell, BCfn, f0, fasymp, laminf1, laminf2)
 	end
 
 	println("fell: $fell")
