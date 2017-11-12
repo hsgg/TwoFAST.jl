@@ -178,7 +178,7 @@ function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
         #println("rdiff:   $rdiff")
         fmax[:] = fmaxnew
         if growth == :exponential
-            ndiff = ceil(Int, 1.5*ndiff)
+            ndiff = ceil(Int, 1.1*ndiff)
         elseif growth != :linear
             error("unkown growth mode $growth")
         end
@@ -223,7 +223,7 @@ function calc_underflow_fmax(nmax, calc_f)
         warn("fmax = $fmax")
         warn("abs(fmax) = $(abs.(fmax))")
         warn("Assumption may be violated: Result is not close to zero")
-        return Array{Complex128}([NaN, NaN]), nmin
+        #return Array{Complex128}([NaN, NaN]), nmin
     end
     return fmax, nmin
 end
@@ -239,7 +239,7 @@ function calc_fn_nseed{T}(n, BCfn::Function, f0::T, fasymp::T, ndiffmin, nminsee
     #println("miller: $fn")
     if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
         #println("===> starting bisection")
-        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed;
+        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, 1, nminseed;
                               growth=:linear, fmax_tol=fmax_tol, imax=imax)
         fn, n = calc_underflow_fmax(n, calc_f)
         #println("miller: $fn, $n")
@@ -255,14 +255,17 @@ function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
 
     # try direct method
     ndiffmin1 = get_ndiffmin(laminf1, laminf2)
-    nminseed1 = find_nseedmin(laminf1, laminf2, BCfn)
+    nminseed1 = 0  #find_nseedmin(laminf1, laminf2, BCfn)
     #println("esterr($nminseed1): ", estimate_prec_loss(nminseed1, BCfn))
+    #=
     fn1, n1 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin1, nminseed1;
-                            calc_fmax=calc_fmax, fmax_tol=fmax_tol, imax=10,
-                            growth=:linear)
+                            calc_fmax=calc_fmax, fmax_tol=fmax_tol,
+                            imax=n+ndiffmin1, growth=:linear)
     if all(isfinite.(fn1))
         return fn1, n1
     end
+    =#
+    fn1, n1 = fasymp, n
 
     # try heuristic
     #println("===> Trying heuristic")
@@ -271,7 +274,7 @@ function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
     #println("esterr($nminseed2): ", estimate_prec_loss(nminseed2, BCfn))
     fn2, n2 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin2, nminseed2;
                             calc_fmax=calc_fmax, fmax_tol=fmax_tol,
-                            imax=10ndiffmin1, growth=:exponential)
+                            imax=n+4ndiffmin1, growth=:exponential)
     if all(isfinite.(fn2))
         return fn2, n2
     end
