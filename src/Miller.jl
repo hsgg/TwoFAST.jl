@@ -159,11 +159,12 @@ function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
 end
 
 
-function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
-                      fmax_tol=1e-10, imax=20, growth=:exponential)
+function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiffmin, nminseed;
+                      fmax_tol=1e-10, imax=100, growth=:exponential, expfac=1.2)
     fmax = deepcopy(fasymp)
     rdiff = 1.0
     nseed = max(nmax, nminseed)
+    ndiff = ndiffmin
     i = imax
     while rdiff > fmax_tol && i > 0
         imax -= 1
@@ -178,7 +179,7 @@ function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiff, nminseed;
         #println("rdiff:   $rdiff")
         fmax[:] = fmaxnew
         if growth == :exponential
-            ndiff = ceil(Int, 1.1*ndiff)
+            ndiff = ceil(Int, expfac*(ndiff + 1 - ndiffmin)) + ndiffmin
         elseif growth != :linear
             error("unkown growth mode $growth")
         end
@@ -229,70 +230,36 @@ function calc_underflow_fmax(nmax, calc_f)
 end
 
 
-function calc_fn_nseed{T}(n, BCfn::Function, f0::T, fasymp::T, ndiffmin, nminseed;
-                          calc_fmax=calc_fmax_fn, fmax_tol=1e-10, imax=20,
-                         growth=:linear)
-    #println("ndiffmin: $ndiffmin")
-    #println("nminseed: $nminseed")
-    fn = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, nminseed, fmax_tol=fmax_tol,
-                   imax=imax, growth=growth)
-    #println("miller: $fn")
-    if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
-        #println("===> starting bisection")
-        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, 1, nminseed;
-                              growth=:linear, fmax_tol=fmax_tol, imax=imax)
-        fn, n = calc_underflow_fmax(n, calc_f)
-        #println("miller: $fn, $n")
-    end
-    return fn, n
-end
-
-
 function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
                     calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
-    #esterr = estimate_prec_loss(n, BCfn)
-    #println("esterr($n): ", esterr)
+    # try exponential growth
+    fn1 = calc_fmax(n, BCfn, f0, fasymp, 1, 0, fmax_tol=fmax_tol,
+                   imax=100, growth=:exponential, expfac=1.5)
+    all(isfinite.(fn1)) && return fn1, n
 
-    # try direct method
-    ndiffmin1 = get_ndiffmin(laminf1, laminf2)
-    nminseed1 = 0  #find_nseedmin(laminf1, laminf2, BCfn)
-    #println("esterr($nminseed1): ", estimate_prec_loss(nminseed1, BCfn))
-    #=
-    fn1, n1 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin1, nminseed1;
-                            calc_fmax=calc_fmax, fmax_tol=fmax_tol,
-                            imax=n+ndiffmin1, growth=:linear)
-    if all(isfinite.(fn1))
-        return fn1, n1
-    end
-    =#
-    fn1, n1 = fasymp, n
+    # try linear growth at nmax
+    ndiffmin = get_ndiffmin(laminf1, laminf2)
+    fn2 = calc_fmax(n, BCfn, f0, fasymp, 1, 0, fmax_tol=fmax_tol,
+                   imax=100n+100ndiffmin, growth=:linear)
+    all(isfinite.(fn2)) && return fn2, n
 
-    # try heuristic
-    #println("===> Trying heuristic")
-    ndiffmin2 = 1
-    nminseed2 = 0  #find_nseedmin2(0, BCfn)
-    #println("esterr($nminseed2): ", estimate_prec_loss(nminseed2, BCfn))
-    fn2, n2 = calc_fn_nseed(n, BCfn, f0, fasymp, ndiffmin2, nminseed2;
-                            calc_fmax=calc_fmax, fmax_tol=fmax_tol,
-                            imax=n+4ndiffmin1, growth=:exponential)
-    if all(isfinite.(fn2))
-        return fn2, n2
-    end
+    # bisect
+    calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, 1, 0; growth=:linear,
+                          fmax_tol=fmax_tol, imax=100n+100ndiffmin)
+    fn3, n3 = calc_underflow_fmax(n, calc_f)
+    all(isfinite.(fn3)) && return fn3, n3
 
     warn("ERROR at n=$n")
-    warn("n1: $n1")
-    warn("n2: $n2")
-    warn("ndiffmin1: $ndiffmin1")
-    warn("nminseed1: $nminseed1")
-    warn("ndiffmin2: $ndiffmin2")
-    warn("nminseed2: $nminseed2")
+    warn("n3: $n3")
+    warn("ndiffmin: $ndiffmin")
     warn("BCfn: $BCfn")
     warn("f0:  $f0")
     warn("fn1: $fn1")
     warn("fn2: $fn2")
+    warn("fn3: $fn3")
     warn("fasymp: $fasymp")
     warn("Initial value could not be calculated!")
-    return fn1, n1
+    return f0, 0
 end
 
 
