@@ -224,7 +224,7 @@ function calc_underflow_fmax(nmax, calc_f)
         warn("fmax = $fmax")
         warn("abs(fmax) = $(abs.(fmax))")
         warn("Assumption may be violated: Result is not close to zero")
-        #return Array{Complex128}([NaN, NaN]), nmin
+        return Array{Complex128}([NaN, NaN]), nmin
     end
     return fmax, nmin
 end
@@ -232,18 +232,22 @@ end
 
 function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
                     calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
-    # try exponential growth
-    fn1 = calc_fmax(n, BCfn, f0, fasymp, 1, 0, fmax_tol=fmax_tol,
-                   imax=100, growth=:exponential, expfac=1.5)
+    # try fast linear growth
+    #println("trying fast linear growth:")
+    ndiffmin = get_ndiffmin(laminf1, laminf2)
+    #println("ndiffmin: $ndiffmin")
+    fn1 = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, 0, fmax_tol=fmax_tol,
+                   imax=100, growth=:linear, expfac=1.5)
     all(isfinite.(fn1)) && return fn1, n
 
     # try linear growth at nmax
-    ndiffmin = get_ndiffmin(laminf1, laminf2)
+    #println("trying linear growth:")
     fn2 = calc_fmax(n, BCfn, f0, fasymp, 1, 0, fmax_tol=fmax_tol,
                    imax=100n+100ndiffmin, growth=:linear)
     all(isfinite.(fn2)) && return fn2, n
 
     # bisect
+    #println("bisecting:")
     calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, 1, 0; growth=:linear,
                           fmax_tol=fmax_tol, imax=100n+100ndiffmin)
     fn3, n3 = calc_underflow_fmax(n, calc_f)
