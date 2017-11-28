@@ -234,6 +234,14 @@ function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
                     calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
     # try fast linear growth
     #println("trying fast linear growth:")
+    #=
+    precloss = estimate_prec_loss(n, BCfn)
+    if precloss < 1e-3
+        ndiffmin = get_ndiffmin(laminf1, laminf2)
+    else
+        ndiffmin = ceil(Int, n / 10)
+    end
+    =#
     ndiffmin = get_ndiffmin(laminf1, laminf2)
     #println("ndiffmin: $ndiffmin")
     fn1 = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, 0, fmax_tol=fmax_tol,
