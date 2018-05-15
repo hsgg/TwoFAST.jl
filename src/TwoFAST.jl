@@ -1306,6 +1306,157 @@ function make_fell_lmax_cache(RR, ellmax, fname="fell_lmax_v23.fits";
 end
 
 
+function calcMll(RR;
+		kmin=1e-4, kmax=1e4, ell=42:42, r0=1.0, N=1024, q=1.0,
+		dlmin=-4, dlmax=4,
+		fell_lmax_even_dl_file="fell_lmax_even_dl.fits",
+		fell_lmax_odd_dl_file="fell_lmax_odd_dl.fits",
+		outfile="Mll-cache.fits",
+		TMell=Float64,
+	)
+
+	if length(ell) > 1
+		ell = sort(ell)
+	end
+
+	dlmineven = iseven(dlmin) ? dlmin : dlmin + 1
+	dlmaxeven = iseven(dlmax) ? dlmax : dlmax - 1
+	dlminodd = isodd(dlmin) ? dlmin : dlmin + 1
+	dlmaxodd = isodd(dlmax) ? dlmax : dlmax - 1
+
+	dlreceven = dlmaxeven
+	dlrecRg1even = dlmineven
+	dlrecodd = dlmaxodd
+	dlrecRg1odd = dlmaxodd
+
+	N2 = div(N, 2) + 1
+	k0 = kmin
+	G = log(kmax / kmin)
+	alpha = k0 * r0
+	#println("ell: $ell")
+	println("kmin = $kmin")
+	println("kmax = $kmax")
+        println("dlreceven    = $dlreceven")
+        println("dlrecRg1even = $dlrecRg1even")
+        println("dlrecodd    = $dlrecodd")
+        println("dlrecRg1odd = $dlrecRg1odd")
+
+	mm = 0:N2-1
+	tt = 2pi * mm / G
+	Am0 = (q - 1) / 2 - im * tt / 2
+
+	Melleven = Array{Complex{Float64}}(length(mm), length(RR))
+	Mellbp1even = Array{Complex{Float64}}(length(mm), length(RR))
+	Mellodd = Array{Complex{Float64}}(length(mm), length(RR))
+	Mellbp1odd = Array{Complex{Float64}}(length(mm), length(RR))
+
+	ndl = div(dlmax - dlmin, 2) + 1
+	work1 = Array{Complex{Float64}}(size(Mell,1))
+	work2 = Array{Complex{Float64}}(size(Mell,1))
+	wtRdlleven = Array{Complex{Float64}}(length(mm), length(RR), ndl)  # tt, RR, dl
+	wtRdllodd = Array{Complex{Float64}}(length(mm), length(RR), ndl)  # tt, RR, dl
+	wtRdll = Array{Complex{Float64}}(length(mm), length(RR), dlmax - dlmin + 1)  # tt, RR, jj'
+
+	Mellsize = length(mm) * length(RR) * 4 * length(ell) * sizeof(Complex{TMell}(1))
+	println("Output size: $(Mellsize) bytes = $(Mellsize/2^30) GiB")
+	println("Output size: $(sizeof(wjj)) bytes = $(sizeof(wjj)/2^30) GiB")
+	#Mell32[:] = 0.0  # for testing
+	f = write_Mlcache_header(outfile, wtRdll, RR, ell)
+
+	print("Reading '$fell_lmax_even_dl_file'... ")
+	@time felleven, flmaxeven, mm, RRcache, lmaxcacheeven = read_fell_lmax(fell_lmax_even_dl_file)
+	print("Reading '$fell_lmax_odd_dl_file'... ")
+	@time fellodd, flmaxodd, mm, RRcache, lmaxcacheodd = read_fell_lmax(fell_lmax_odd_dl_file)
+	ellmax = max(maximum(ell), maximum(lmaxcacheeven), maximum(lmaxcacheodd))
+	println("ellmax: $ellmax")
+	println("lmaxcacheeven: $lmaxcacheeven")
+	println("lmaxcacheodd: $lmaxcacheodd")
+	@assert length(mm) == N2
+	@assert all(RRcache .== RR)
+	RRnorm = deepcopy(RR)
+	RRnorm[RR.>1] = 1./RR[RR.>1]
+
+	# backward recursion
+	tstep = @timed nothing
+	tswapping = @timed nothing
+	tcalcMl = @timed nothing
+	tcalcwl = @timed nothing
+	tcalcwljj = @timed nothing
+	tcalcprefac = @timed nothing
+	tout = @timed nothing
+	twrite = @timed nothing
+	ttest = @timed nothing
+	global t0 = @timed nothing
+	global tm2 = @timed nothing
+	global tm2s = @timed nothing
+	global tm4 = @timed nothing
+	global tp2 = @timed nothing
+	global tp2s = @timed nothing
+	global tp4 = @timed nothing
+	ll = length(ell)
+	tic()
+	@time for ellnow in ellmax:-1:minimum(ell)
+		println("ellnow: $ellnow")
+		if ellnow == ell[ll]
+			print("ell $ellnow, ")
+			toc()
+			tic()
+			tcalcMl += @timed calc_Mellell_lmax!(ellnow, felleven, flmaxeven,
+				Melleven, Mellbp1even)
+			tcalcMl += @timed calc_Mellell_lmax!(ellnow, fellodd, flmaxodd,
+				Mellodd, Mellbp1odd)
+			tcalcwl += @timed calc_wtdll!(wtRdlleven, Melleven, Mellbp1even,
+				Am0, ellnow, dlreceven, dlrecRg1even,
+				dlmineven, dlmaxeven, RR, RRnorm, work1, work2)
+			tcalcwl += @timed calc_wtdll!(wtRdllodd, Mellodd, Mellbp1odd,
+				Am0, ellnow, dlrecodd, dlrecRg1odd, dlminodd,
+				dlmaxodd, RR, RRnorm, work1, work2)
+
+			# merge even and odd
+			for dl=dlmin:dlmax
+				i = dl - dlmin + 1
+				j = div(i, 2) + 1
+				if iseven(dl)
+					wtRdll[:,:,i] .= wtRdlleven[:,:,j]
+				else
+					wtRdll[:,:,i] .= wtRdllodd[:,:,j]
+				end
+			end
+
+			# now we have everything together to calculate for ell=ellnow+jmax
+			twrite += @timed write(f, wtRdll)
+
+			ll -= 1
+		end
+
+		tstep += @timed stepback!(RR, ellnow, Am0, dlrec, fell, flmax)
+		tstep += @timed stepbackRg1!(RR, ellnow, Am0, dlrecRg1, fell, flmax)
+	end
+	toc()
+	timed_println("step:          ", tstep)
+	timed_println("swapping:      ", tswapping)
+	timed_println("calc_Mellell!: ", tcalcMl)
+	timed_println("  t0 :  ", t0)
+	timed_println("  tm2 : ", tm2)
+	timed_println("  tm2s: ", tm2s)
+	timed_println("  tm4 : ", tm4)
+	timed_println("  tp2 : ", tp2)
+	timed_println("  tp2s: ", tp2s)
+	timed_println("  tp4 : ", tp4)
+	timed_println("calc_wtdll!:   ", tcalcwl)
+	timed_println("calc_wljj!:    ", tcalcwljj)
+	timed_println("mult_prefac!:  ", tcalcprefac)
+	timed_println("convert:       ", tout)
+	timed_println("write:         ", twrite)
+	timed_println("test_rand_2f1: ", ttest)
+
+	print("Closing outfile $outfile... ")
+	@time close(f)
+
+	return tt
+end
+
+
 function calcMljj(RR;
 		kmin=1e-4, kmax=1e4, ell=42:42, jmax=2, r0=1.0, N=1024, q=1.0,
 		dlrec=4, dlrecRg1=-4, dlmin=-4, dlmax=4,
