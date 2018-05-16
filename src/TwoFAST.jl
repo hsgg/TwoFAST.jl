@@ -707,6 +707,8 @@ function BCDEfn(ell, dl, a, R)
 
 	return B, C, D, E
 end
+
+
 function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 			      G=log(1e4/1e-4), alpha=1e-4)
 	#fold, lold = calc_2f1_RqmG_orig(ell, R, dl; q=q, m=m, G=G, alpha=alpha)
@@ -1474,7 +1476,7 @@ function write_Mlcache_header(fname, Mell, RR, ell)
 	return f
 end
 
-function read_Mlcache_header(fname="Ml21-cache.fits")
+function read_Mlcache_header(fname="Ml21-cache.bin")
 	f = open(fname, "r")
 	magic, lenmm, lenRR, lenjj, lenell = read(f, Int64, 5)
 	@assert magic == magic_number
@@ -1552,7 +1554,7 @@ function calcMljj(RR;
 		kmin=1e-4, kmax=1e4, ell=42:42, jmax=2, r0=1.0, N=1024, q=1.0,
 		dlrec=4, dlrecRg1=-4, dlmin=-4, dlmax=4,
 		fell_lmax_file="fell_lmax_v23.fits",
-		outfile="Ml21-cache.fits",
+		outfile="Ml21-cache.bin",
 		TMell=Float64,
 	)
 
@@ -1686,7 +1688,7 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 		#winx=one, wink=one,
 		winx=windowfn, wink=windowfn,
 		fftw_flags=FFTW.MEASURE, fftw_timelimit=Inf,
-		cachefile="Ml21-cache.fits",
+		cachefile="Ml21-cache.bin",
 		outfunc=(a,b,c,d)->nothing,
 	)
 	if maximum(ridxs) > N
