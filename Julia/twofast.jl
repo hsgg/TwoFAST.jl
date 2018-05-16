@@ -13,17 +13,11 @@ using IncGammaBeta
 #using SphBes
 
 
-mylgamma(z) = lgamma(z)
-
-
 function unzip(arr)
 	# here we assume each tuple is of the same type as the first tuple
 	ncol = length(arr[1])
 	nrow = length(arr)
-	a = ()
-	for col in arr[1]
-		a = (a..., Array{typeof(col)}(nrow))
-	end
+	a = [Array{typeof(col)}(nrow) for col in arr[1]]
 	for i=1:nrow, j=1:ncol
 		a[j][i] = arr[i][j]
 	end
@@ -179,8 +173,8 @@ end
 
 function make_Mellnu(tt, alpha, ell, nu; q=0)
 	n = q - nu - 1 - im*tt
-	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(mylgamma((1 + ell + n) / 2)
-		- mylgamma((2 + ell - n) / 2))
+	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(lgamma((1 + ell + n) / 2)
+		- lgamma((2 + ell - n) / 2))
 	A = alpha.^(im*tt - q + nu)
 	#println("n: $(n[1])")
 	#println("intjlttn: $(intjlttn[1])")
@@ -462,11 +456,11 @@ function calc_Mll_unity{T}(ell, n::Complex{T}, dl, alpha)
 	b = ell + T(1)/2 + a
 	c = ell + dl + T(3)/2
 	# gamma(c) was cancelled
-	lngr = mylgamma(b) - mylgamma(1-a) - mylgamma(c-a)
+	lngr = lgamma(b) - lgamma(1-a) - lgamma(c-a)
 	Uellell_pre = T(2)^(n-2) * pi
 	val_pre = alpha^(-n-1) * Uellell_pre
-	f000 = exp(mylgamma(c-a-b) - mylgamma(c-b) + lngr) * val_pre
-	f010 = exp(mylgamma(c-a-b-1) - mylgamma(c-b-1) + lngr) * val_pre
+	f000 = exp(lgamma(c-a-b) - lgamma(c-b) + lngr) * val_pre
+	f010 = exp(lgamma(c-a-b-1) - lgamma(c-b-1) + lngr) * val_pre
         if 1 - a == -1 && c - a - b - 1 == 0  # infinities cancel, uh, oh...
             f010 = 0.0 + 0.0im
         end
@@ -821,7 +815,7 @@ function Mellell_pre{T}(ell1, ell2, R::T, n, alpha::T)
 	b = (1 + ell1 + ell2 + n) / 2
 	c = ell2 + T(3) / 2
 	d = (2 + ell1 - ell2 - n) / 2
-	gr = exp(ell2 * log(R) + mylgamma(b) - mylgamma(d) - mylgamma(c))
+	gr = exp(ell2 * log(R) + lgamma(b) - lgamma(d) - lgamma(c))
 	Uellell_pre = T(2)^(n-2) * pi * gr
 	val_pre = alpha^(-n-1) * Uellell_pre
 	#println("ell1=$ell1, ell2=$ell2, t=$t, R=$R, alpha=$alpha, q=$q")
@@ -1177,7 +1171,7 @@ end
 # calculate ln[(2n + 1)!!]
 function ldblfac_2xp1(n::Integer)
 	# 2n+1 is always odd!
-	return (n+1) * log(2) + mylgamma(n + 1.5) - 0.5 * log(pi)
+	return (n+1) * log(2) + lgamma(n + 1.5) - 0.5 * log(pi)
 end
 
 
@@ -1273,11 +1267,11 @@ function estimate_roundofferror_wl(pkfn, ell::Int, dl::Int, chi::Float64, R::Flo
         alpha = k0 * chi0
         pk = pkfn(k)
 
-        lgams = (mylgamma(2 - q)
-            + mylgamma((ell1 + ell2 + q) / 2)
-            - mylgamma((4 + ell1 + ell2 - q) / 2)
-            - mylgamma((3 + ell1 - ell2 - q) / 2)
-            - mylgamma((3 + ell2 - ell1 - q) / 2))
+        lgams = (lgamma(2 - q)
+            + lgamma((ell1 + ell2 + q) / 2)
+            - lgamma((4 + ell1 + ell2 - q) / 2)
+            - lgamma((3 + ell1 - ell2 - q) / 2)
+            - lgamma((3 + ell2 - ell1 - q) / 2))
         Mll = alpha^(-q) * 2.0^(q-3) * pi * exp(lgams)
 	k3qpk = (k / k0).^(3-q) .* pk
         L = 2pi * N / G
