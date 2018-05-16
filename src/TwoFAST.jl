@@ -3,61 +3,23 @@ include("./Miller.jl")
 
 module TwoFAST
 
-export unzip
 export xicalc
 export make_fell_lmax_cache
 export calcMljj
 export calcwljj
 
+
+# from this package
 using PerformanceStats
+using Miller
+
+# other packages
 using FITSIO
 using IncGammaBeta
 #using SphBes
 
 
-function unzip(arr)
-	# here we assume each tuple is of the same type as the first tuple
-	ncol = length(arr[1])
-	nrow = length(arr)
-	a = [Array{typeof(col)}(nrow) for col in arr[1]]
-	for i=1:nrow, j=1:ncol
-		a[j][i] = arr[i][j]
-	end
-	return a
-end
-
-
-# window function
-function windowfn(x::Number, xmin, xleft, xright, xmax)
-	@assert xmin < xleft < xright < xmax
-	if x > xleft && x < xright
-		return 1.0
-	elseif x < xmin || x > xmax
-		return 0.0
-	elseif x < xleft
-		r = (x - xmin) / (xleft - xmin)
-	elseif x > xright
-		r = (xmax - x) / (xmax - xright)
-	end
-	return r - sinpi(2*r)/(2*pi)
-end
-function windowfn(x, xmin, xleft, xright, xmax)
-	w = Array{Float64}(size(x)...)
-	for i in eachindex(x)
-		w[i] = windowfn(x[i], xmin, xleft, xright, xmax)
-	end
-	w
-end
-function windowfn(x; dlnxleft=0.46, dlnxright=0.46)
-	xmin = minimum(x)
-	xleft = exp(log(xmin) + dlnxleft)
-	xmax = maximum(x)
-	xright = exp(log(xmax) - dlnxright)
-	windowfn(x, xmin, xleft, xright, xmax)
-end
-
-one(x) = ones(length(x))
-
+###################### muladd variants ##############################
 
 function muladd_a_b!(dest, b, scalar, src, a)
 	@assert size(src,1) == size(dest,1)
@@ -80,7 +42,143 @@ function muladdset_a_b!(dest, b, scalar, src, a)
 end
 
 
-function wljj_from_wldl!(wtRdllm2::Array{Complex{Float64},3}, wtRdll0::Array{Complex{Float64},3}, wtRdllp2::Array{Complex{Float64},3}, L::Int64, wjj::Array{Complex{Float64},3})
+############ phi(), Fourier transform window functions ###########
+
+function windowfn(x::Number, xmin, xleft, xright, xmax)
+	@assert xmin < xleft < xright < xmax
+	if x > xleft && x < xright
+		return 1.0
+	elseif x < xmin || x > xmax
+		return 0.0
+	elseif x < xleft
+		r = (x - xmin) / (xleft - xmin)
+	elseif x > xright
+		r = (xmax - x) / (xmax - xright)
+	end
+	return r - sinpi(2*r)/(2*pi)
+end
+function windowfn(x; dlnxleft=0.46, dlnxright=0.46)
+	xmin = minimum(x)
+	xleft = exp(log(xmin) + dlnxleft)
+	xmax = maximum(x)
+	xright = exp(log(xmax) - dlnxright)
+	windowfn.(x, xmin, xleft, xright, xmax)
+end
+
+one(x) = ones(length(x))
+
+
+function make_phi(pkfn, k0, N, L, q, winx, wink)
+	k = @. k0 * exp((0:N-1) * (2 * pi / L))
+	pk = pkfn.(k)
+	return make_phi((k, pk), k0, N, L, q, winx, wink)
+end
+
+function make_phi(pkfn::Tuple, k0, N, L, q, winx, wink)
+	k = pkfn[1]
+	pk = pkfn[2]
+	kpk = (@. (k/k0)^(3 - q) * pk) .* winx(k)
+	phi = conj(rfft(kpk)) / L
+	phi .*= wink(k)[length(k)-length(phi)+1:end]
+	return phi
+end
+
+
+######################## xicalc() ############################
+
+function make_Mellnu(tt, alpha, ell, nu; q=0)
+	n = q - nu - 1 - im*tt
+	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(lgamma((1 + ell + n) / 2)
+		- lgamma((2 + ell - n) / 2))
+	A = alpha.^(im*tt - q + nu)
+	#println("n: $(n[1])")
+	#println("intjlttn: $(intjlttn[1])")
+	#println("A: $(A[1])")
+	return A .* intjlttn
+end
+
+
+function calc_qbest(ell, nu; n1=0.9, n2=0.9999)
+	qbest = (2 + n1 + n2) / 2 - nu
+        #qbest = 2.0 - nu
+        qmin = max(n2 - 1.0 - nu, -ell)
+        qmax = min(n1 + 3.0 - nu, 2.0)
+
+	q = qbest
+	if !(qmin < q < qmax)
+		warn("Need suboptimal choice of q!")
+        	q = (qmin + 2qmax) / 3
+	end
+
+        #q = (qmin + 2qmax) / 3
+
+	#q = (qbest < qmin) ? qmin : (qbest > qmax ? qmax : qbest)
+
+	return q, qbest, qmin, qmax
+end
+
+
+function xicalc{T,Tq}(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000,
+		q::Tq=:auto, winx=windowfn, wink=windowfn,
+	)
+	if T <: Tuple
+		kmin = minimum(pkfn[1])
+		kmax = maximum(pkfn[1]) * pkfn[1][2] / pkfn[1][1]
+		N = length(pkfn[1])
+	end
+
+	if Tq <: Number
+		qnu = q
+	else
+		qnu, qbest, qmin, qmax = calc_qbest(ell, nu)
+		println()
+		println("  qbest: $qbest")
+		println("  qmin:  $qmin")
+		println("  qmax:  $qmax")
+		println("  (ell,nu) = ($ell,$nu), qnu=$qnu")
+		if qmin > qmax
+		    error("Integral does not converge!")
+		end
+	end
+
+	N2 = div(N,2) + 1
+	k0 = kmin
+	G = log(kmax / kmin)
+	alpha = k0 * r0
+
+	L = 2 * pi * N / G
+
+	tt = (2 * pi / G) * (0:N2-1)
+
+	rr = @. r0 * exp((0:N-1) * (G / N))
+
+	prefac = @. (k0^3 / (pi * alpha^nu * G)) * (rr / r0)^(-(qnu+nu))
+
+	Mellnu = make_Mellnu(tt, alpha, ell, 0; q=qnu)
+
+	phi = make_phi(pkfn, k0, N, L, qnu + nu, winx, wink)
+
+	#println(N)
+	#println(typeof(pkfn))
+	#println(length(phi))
+	#println(all(isfinite.(phi)))
+	#println(length(Mellnu))
+	#println(all(isfinite.(Mellnu)))
+	#println(length(prefac))
+	#println(all(isfinite.(prefac)))
+	xi = prefac .* brfft(phi .* Mellnu, N)
+
+	return rr, xi
+end
+
+
+########################### (l,l') -> (j,j') #############################
+
+function wljj_from_wldl!(wtRdllm2::Array{Complex{Float64},3},
+			 wtRdll0::Array{Complex{Float64},3},
+			 wtRdllp2::Array{Complex{Float64},3},
+			 L::Int64,
+			 wjj::Array{Complex{Float64},3})
 	f1 = L * (L - 1) / ((2L - 1) * (2L + 1))
 	f2 = -(2L^2 + 2L - 1) / ((2L - 1) * (2L + 3))
 	f3 = (L + 1) * (L + 2) / ((2L + 1) * (2L + 3))
@@ -116,13 +214,13 @@ function wljj_from_wldl!(wtRdllm2::Array{Complex{Float64},3}, wtRdll0::Array{Com
 	muladd_a_b!(wjj, 4, f3 * f3, wtRdllp2, p2p2)
 end
 
-function wljj_dl(ell, j1, j2, wldl; errcheck=false)
+function wljj_dl(ell, j1, j2, wldl; abs_coeff=false)
 	@assert j1 == 0 || j1 == 2
 	@assert j2 == 0 || j2 == 2
 	f0 = ell * (ell - 1) / ((2 * ell - 1) * (2 * ell + 1))
 	f1 = - (2 * ell^2 + 2 * ell - 1) / ((2 * ell - 1) * (2 * ell + 3))
 	f2 = (ell + 1) * (ell + 2) / ((2 * ell + 1) * (2 * ell + 3))
-	if errcheck
+	if abs_coeff
 		f0 = abs(f0)
 		f1 = abs(f1)
 		f2 = abs(f2)
@@ -155,36 +253,6 @@ function wljj_dl(ell, j1, j2, wldl; errcheck=false)
 	end
 	w
 end
-
-
-function make_phi(pkfn, k0, N, L, q, winx, wink)
-	k = @. k0 * exp((0:N-1) * (2 * pi / L))
-	pk = pkfn.(k)
-	return make_phi((k, pk), k0, N, L, q, winx, wink)
-end
-
-function make_phi(pkfn::Tuple, k0, N, L, q, winx, wink)
-	k = pkfn[1]
-	pk = pkfn[2]
-	kpk = (@. (k/k0)^(3 - q) * pk) .* winx(k)
-	phi = conj(rfft(kpk)) / L
-	phi .*= wink(k)[length(k)-length(phi)+1:end]
-	return phi
-end
-
-
-function make_Mellnu(tt, alpha, ell, nu; q=0)
-	n = q - nu - 1 - im*tt
-	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(lgamma((1 + ell + n) / 2)
-		- lgamma((2 + ell - n) / 2))
-	A = alpha.^(im*tt - q + nu)
-	#println("n: $(n[1])")
-	#println("intjlttn: $(intjlttn[1])")
-	#println("A: $(A[1])")
-	return A .* intjlttn
-end
-
-
 
 
 ################### 2F1 functions #########################
@@ -624,7 +692,6 @@ function calc_2f1_RqmG_orig{T}(ell, R::T, dl; q=1.0, m::Int=500, G=log(1e4/1e-4)
 end
 
 # alternative
-using Miller
 function BCDEfn(ell, dl, a, R)
 	c = ell + dl + 3/2
 	ainvc = a / c
@@ -1310,10 +1377,10 @@ function estimate_wljjerr(pkfn, ell::Integer, chi, R::Float64;
 	wldl[ 2, 0] = errest(L+2, L)
 	wldl[ 2, 2] = errest(L+2, L+2)
 
-	we00 = wljj_dl(L, 0, 0, wldl; errcheck=true)
-	we02 = wljj_dl(L, 0, 2, wldl; errcheck=true)
-	we20 = wljj_dl(L, 2, 0, wldl; errcheck=true)
-	we22 = wljj_dl(L, 2, 2, wldl; errcheck=true)
+	we00 = wljj_dl(L, 0, 0, wldl; abs_coeff=true)
+	we02 = wljj_dl(L, 0, 2, wldl; abs_coeff=true)
+	we20 = wljj_dl(L, 2, 0, wldl; abs_coeff=true)
+	we22 = wljj_dl(L, 2, 2, wldl; abs_coeff=true)
 
 	return we00, we02, we20, we22
 end
@@ -1721,78 +1788,5 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 	return rr
 end
 
-
-function calc_qbest(ell, nu; n1=0.9, n2=0.9999)
-	qbest = (2 + n1 + n2) / 2 - nu
-        #qbest = 2.0 - nu
-        qmin = max(n2 - 1.0 - nu, -ell)
-        qmax = min(n1 + 3.0 - nu, 2.0)
-
-	q = qbest
-	if !(qmin < q < qmax)
-		warn("Need suboptimal choice of q!")
-        	q = (qmin + 2qmax) / 3
-	end
-
-        #q = (qmin + 2qmax) / 3
-
-	#q = (qbest < qmin) ? qmin : (qbest > qmax ? qmax : qbest)
-
-	return q, qbest, qmin, qmax
-end
-
-
-function xicalc{T,Tq}(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000,
-		q::Tq=:auto, winx=windowfn, wink=windowfn,
-	)
-	if T <: Tuple
-		kmin = minimum(pkfn[1])
-		kmax = maximum(pkfn[1]) * pkfn[1][2] / pkfn[1][1]
-		N = length(pkfn[1])
-	end
-
-	if Tq <: Number
-		qnu = q
-	else
-		qnu, qbest, qmin, qmax = calc_qbest(ell, nu)
-		println()
-		println("  qbest: $qbest")
-		println("  qmin:  $qmin")
-		println("  qmax:  $qmax")
-		println("  (ell,nu) = ($ell,$nu), qnu=$qnu")
-		if qmin > qmax
-		    error("Integral does not converge!")
-		end
-	end
-
-	N2 = div(N,2) + 1
-	k0 = kmin
-	G = log(kmax / kmin)
-	alpha = k0 * r0
-
-	L = 2 * pi * N / G
-
-	tt = (2 * pi / G) * (0:N2-1)
-
-	rr = @. r0 * exp((0:N-1) * (G / N))
-
-	prefac = @. (k0^3 / (pi * alpha^nu * G)) * (rr / r0)^(-(qnu+nu))
-
-	Mellnu = make_Mellnu(tt, alpha, ell, 0; q=qnu)
-
-	phi = make_phi(pkfn, k0, N, L, qnu + nu, winx, wink)
-
-	#println(N)
-	#println(typeof(pkfn))
-	#println(length(phi))
-	#println(all(isfinite.(phi)))
-	#println(length(Mellnu))
-	#println(all(isfinite.(Mellnu)))
-	#println(length(prefac))
-	#println(all(isfinite.(prefac)))
-	xi = prefac .* brfft(phi .* Mellnu, N)
-
-	return rr, xi
-end
 
 end # module

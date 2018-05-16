@@ -16,10 +16,7 @@ The 2-FAST algorithm is split into three main tasks. First, the *Mll* are
 calculated at *lmax* and *dlmax*. Second, the *Mll* (or rather the *Mljj*) are
 calculated for all *l* and *dl*, and, finally, the *wljj* terms are calculated.
 
-The implementation combines the first two in the sense that only one struct is
-defined for them.
-
-follows these three tasks by defining three structs that
+The implementation follows these three tasks by defining three structs that
 define where the information is found if it was written to disk, whether to
 calculate on-the-fly, etc. The default is to keep everything in memory.
 
