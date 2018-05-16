@@ -1,4 +1,5 @@
-include("./miller.jl")
+include("./PerformanceStats.jl")
+include("./Miller.jl")
 module TwoFAST
 
 export unzip

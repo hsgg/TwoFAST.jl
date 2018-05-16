@@ -1,8 +1,6 @@
 #!/usr/bin/env julia
 
 
-include("performancestats.jl")
-include("twofast.jl")
 using TwoFAST
 
 # for Spline1D (add it with Pkg.add("Dierckx")):
