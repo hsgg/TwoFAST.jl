@@ -1793,5 +1793,6 @@ function xicalc{T,Tq}(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000
 	xi = prefac .* brfft(phi .* Mellnu, N)
 
 	return rr, xi
+end
 
 end # module
