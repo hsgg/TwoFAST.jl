@@ -67,7 +67,7 @@ end
 ######################### call all tests ########################3
 
 function test_all()
-	d = readdlm("../planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
+	d = readdlm("data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
 	pk = Spline1D(d[:,1], d[:,2])
 
 	xiln(pk)
