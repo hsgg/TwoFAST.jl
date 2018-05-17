@@ -77,7 +77,7 @@ function test_all()
 	pk = Spline1D(d[:,1], d[:,2])
 
 	xiln(pk)
-	@test compare_tsv("xi.tsv", "data/xi.tsv", atol=1e-23, rtol=1e-10)
+	@test compare_tsv("xi.tsv", "data/xi.tsv", atol=1e-20, rtol=1e-10)
 
 	wlrr(pk)
 	fell0, lmax0, mm0, RR0, ellmax0 = TwoFAST.read_fell_lmax("fell_lmax_v23.fits")
