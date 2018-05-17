@@ -13,7 +13,7 @@ end
 
 function xiln(pk; N=1024, fname="xi.tsv")
 	kmax = 1e3
-	kmin=1e-5
+	kmin = 1e-5
 	r0 = 1e-3
 
 	print("xi, l=0, nu=0: ")
