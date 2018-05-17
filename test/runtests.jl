@@ -66,18 +66,24 @@ end
 
 ######################### call all tests ########################3
 
+function compare_tsv(f1, f2; atol=0.0, rtol=sqrt(eps()))
+	x0 = readdlm(f1)
+	x1 = readdlm(f2)
+	return all(isapprox.(x0, x1, atol=atol, rtol=rtol))
+end
+
 function test_all()
 	d = readdlm("data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
 	pk = Spline1D(d[:,1], d[:,2])
 
 	xiln(pk)
-	run(`cmp xi.tsv data/xi.tsv`)
+	@test compare_tsv("xi.tsv", "data/xi.tsv", atol=1e-23, rtol=1e-10)
 
 	wlrr(pk)
-	run(`cmp fell_lmax_v23.fits data/fell_lmax_v23.fits`)
-	run(`cmp Ml21-cache.bin data/Ml21-cache.bin`)
-	run(`cmp wl42_jj00.tsv data/wl42_jj00.tsv`)
-	run(`cmp wl42_jj02.tsv data/wl42_jj02.tsv`)
+	#run(`cmp fell_lmax_v23.fits data/fell_lmax_v23.fits`)
+	#run(`cmp Ml21-cache.bin data/Ml21-cache.bin`)
+	@test compare_tsv("wl42_jj00.tsv", "data/wl42_jj00.tsv", atol=1e-12, rtol=1e-10)
+	@test compare_tsv("wl42_jj02.tsv", "data/wl42_jj02.tsv", atol=1e-12, rtol=1e-10)
 end
 
 test_all()
