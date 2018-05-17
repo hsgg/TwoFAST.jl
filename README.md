@@ -18,16 +18,21 @@ Projected Two-point functions](https://arxiv.org/abs/1709.02401).
 
 Load the module:
 
+```julia
     using TwoFAST
+```
 
 For both minimal examples we need a power spectrum. Get it like so:
 
+```julia
     using Dierckx
     d = readdlm("test/data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
     pk = Spline1D(d[:,1], d[:,2])
+```
 
 To calculate the real-space correlation function, use
 
+```julia
     N = 1024    # number of points to use in the Fourier transform
     kmax = 1e3  # maximum k-value
     kmin = 1e-5 # minimum k-value
@@ -38,6 +43,7 @@ To calculate the real-space correlation function, use
 
     print("ξ(r), ℓ=0, ν=-2:")
     r, xi0m2 = xicalc(pk, 0, -2; N=N, kmin=kmin, kmax=kmax, r0=r0)
+```
 
 To calculate the wl terms, we first need to calculate the Fourier kernels at
 the highest needed ℓ, and store the result in a file. The file can be specified
@@ -51,6 +57,7 @@ create the arrays, and write a function (`outfunc()`) that will store them in
 the arrays. The function `outfunc()` will be called for each ℓ in the array
 `ell`. Here's the example:
 
+```julia
     N = 4096
     chi0 = 1e-3
     kmin = 1e-5
@@ -75,3 +82,4 @@ the arrays. The function `outfunc()` will be called for each ℓ in the array
         end
     end
     rr = calcwljj(pk, RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q, outfunc=outfunc)
+```
