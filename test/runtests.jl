@@ -38,10 +38,10 @@ function wlrr(pk)
 	ell = [42]  # only ell=42 for this run
 	RR = [0.6, 0.7, 0.8, 0.9, 1.0]
 
-	# calculate M_ll at high ell:
+	# calculate M_ll at high ell, result gets saved to a file:
 	make_fell_lmax_cache(RR, maximum(ell); N=N, q=q, G=log(kmax / kmin), k0=kmin, r0=chi0)
 
-	# calculate all M_ll:
+	# calculate all M_ll, result gets saved to a file:
 	tt = calcMljj(RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q)
 
 	# calculate wljj:

@@ -426,7 +426,7 @@ end
 calc_2f1_RqmG = calc_2f1_RqmG_new
 
 
-#################### b+1 recursion
+#################### b+1 recursion ###########################
 
 function stepfor_2f1!(mm, RR, ell, Am, hypAB)
 	# update from ell -> ell+1
@@ -545,6 +545,8 @@ function stepbackRg1!(RR, ell, Am, dlrec, hypAB, lmax)
 end
 
 
+############## Mellell utilities #############################
+
 function Mellell_pre{T}(ell1, ell2, R::T, n, alpha::T)
 	#a = (ell2 - ell1 + n) / 2
 	b = (1 + ell1 + ell2 + n) / 2
@@ -594,6 +596,7 @@ function calc_Mellell_lmax!(ell, fell, flmax, Mellell, Mellbp1)
 end
 
 
+########################## dl ± 2 recursions ###################
 t0 = @timed nothing
 tm2 = @timed nothing
 tm2s = @timed nothing
@@ -903,6 +906,8 @@ function calc_wtdll!(wtRdl, Mell::Array{Complex{Float64},2}, Mellbp1::Array{Comp
 end
 
 
+###################### Error estimates (Use with caution!) #########################
+
 # calculate ln[(2n + 1)!!]
 function ldblfac_2xp1(n::Integer)
 	# 2n+1 is always odd!
@@ -1052,6 +1057,8 @@ function estimate_wljjerr(pkfn, ell::Integer, chi, R::Float64;
 end
 
 
+########################## utilities ##################################
+
 function calc_ellenlarged(ell, jmax)
 	ellenlarged = Array{Int}((2jmax + 1) * length(ell))
 	ll = 1
@@ -1068,6 +1075,8 @@ function calc_ellenlarged(ell, jmax)
 	return ellenlarged
 end
 
+
+##################### fell_lmax cache ###########################
 
 function calc_fell_lmax(ellmax, mm, RR, q, G, alpha, dlrec, dlrecRg1)
 	fell = Array{Complex{Float64}}(2, length(mm), length(RR))
@@ -1126,6 +1135,8 @@ function read_fell_lmax(fname="fell_lmax_v23.fits")
 end
 
 
+############### Ml-cache ##########################
+
 const magic_number = 0x782aa138291e1800
 function write_Mlcache_header(fname, Mell, RR, ell)
 	@assert typeof(Mell) == Array{Complex128,3}
@@ -1155,6 +1166,8 @@ function read_Mlcache_record!(f, Mell)
 	read(f, Mell)
 end
 
+
+######################### fast multiply-copy-add operations ##############
 
 function copyconvertcond!(wjj, Mell32, ll)
 	@assert size(Mell32,4) >= ll >= 1
