@@ -59,7 +59,7 @@ end
 
 
 function main()
-	d = readdlm("../planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
+	d = readdlm("../test/data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
 	pk = Spline1D(d[:,1], d[:,2])
 
 	# one spherical bessel function:
