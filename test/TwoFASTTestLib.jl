@@ -1,10 +1,11 @@
 #!/usr/bin/env julia
 
 
-module XiLib
+module TwoFASTTestLib
 
 export get_quadosc_xi
 export calc_2fast_xi
+export calc_xiderivs
 
 using TwoFAST
 using Dierckx

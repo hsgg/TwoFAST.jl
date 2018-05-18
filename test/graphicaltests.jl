@@ -1,11 +1,11 @@
 #!/usr/bin/env julia
 
-include("XiLib.jl")
+include("TwoFASTTestLib.jl")
 
 module GraphicTests
 
 using TwoFAST
-using XiLib
+using TwoFASTTestLib
 using PyCall
 using PyPlot
 using Dierckx
@@ -48,14 +48,74 @@ function plot_xi_rdiff(ℓ)
 end
 
 
+function plot_xi_derivs()
+    # get quadosc curve
+    rq, ξq0 = get_quadosc_xi(0)
+    ξq = Spline1D(rq, ξq0[:,3], k=5)
+    ξq′(r) = derivative(ξq, r; nu=1)
+    ξq″(r) = derivative(ξq, r; nu=2)
+
+    # get 2-FAST curve
+    r0, ξ00 = calc_2fast_xi(0, [0])
+    r1, ξ1m1 = calc_2fast_xi(1, [-1])
+    r2, ξ2m2 = calc_2fast_xi(2, [-2])
+    ξ = Spline1D(r0, ξ00[1])
+    ξ′ = Spline1D(r1, - ξ1m1[1] ./ r1)
+    ξ″ = Spline1D(r2, (ξ2m2[1] - ξ1m1[1]) ./ r2.^2)
+
+    r = rq[1:10:end]
+
+    # plot
+    figure()
+    gs = gridspec.GridSpec(2, 1, height_ratios=[3,1])
+    gs[:update](hspace=0)
+    ax1 = subplot(gs[1])
+    ax2 = subplot(gs[2], sharex=ax1)
+    setp(ax1[:get_xticklabels](), visible=false)
+    ax1[:hlines](0.0, 0.0, 200, color="0.85", zorder=-2)
+    ax2[:hlines](0.0, 0.0, 200, color="0.85", zorder=-2)
+
+    # ξ
+    diff = ξ(r) - ξq(r)
+    rdiff = diff ./ ξq(r)
+    ax1[:plot](rq, ξq(rq), "0.5", alpha=0.75, zorder=-1)
+    ax1[:plot](r0, ξ(r0), "--", label="\$\\xi(r)\$")
+    ax2[:plot](r, rdiff, "--")
+
+    # ξ′
+    diff = ξ′(r) - ξq′(r)
+    rdiff = diff ./ ξq′(r)
+    ax1[:plot](rq, ξq′(rq), "0.5", alpha=0.75, zorder=-1)
+    ax1[:plot](r0, ξ′(r0), "--", label="\$\\xi'(r)\$")
+    ax2[:plot](r, rdiff, "--")
+
+    # ξ″
+    diff = ξ″(r) - ξq″(r)
+    rdiff = diff ./ ξq″(r)
+    ax1[:plot](rq, ξq″(rq), "0.5", alpha=0.75, zorder=-1)
+    ax1[:plot](r0, ξ″(r0), "--", label="\$\\xi''(r)\$")
+    ax2[:plot](r, rdiff, "--")
+
+    ax1[:set_xlim](0, 200)
+    ax1[:set_ylim](-0.001, 0.003)
+    ax2[:set_ylim](-0.00049, 0.00049)
+    ax2[:set_xlabel](L"r")
+    ax1[:set_ylabel](L"\xi(r)")
+    ax2[:set_ylabel](L"\Delta\xi/\xi")
+    ax1[:legend]()
+    tight_layout()
+end
+
+
 end
 
 close("all")
-GraphicTests.plot_xi_rdiff(0)
-GraphicTests.plot_xi_rdiff(1)
-GraphicTests.plot_xi_rdiff(2)
-GraphicTests.plot_xi_rdiff(3)
-GraphicTests.plot_xi_rdiff(4)
+#GraphicTests.plot_xi_rdiff(0)
+#GraphicTests.plot_xi_rdiff(1)
+#GraphicTests.plot_xi_rdiff(2)
+#GraphicTests.plot_xi_rdiff(3)
+#GraphicTests.plot_xi_rdiff(4)
+GraphicTests.plot_xi_derivs()
 
 
 # vim: set sw=4 et sts=4 :

@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-include("XiLib.jl")
+include("TwoFASTTestLib.jl")
 
 
 module TestTwoFAST
@@ -12,12 +12,12 @@ using Dierckx
 else
     using Test
 end
-using XiLib
+using TwoFASTTestLib
 
 
 ############### test xicalc #######################
 
-function test_xi(ℓ)
+function test_xiln(ℓ)
     νν = -2:3
     r0, ξ0 = get_quadosc_xi(ℓ)
     r1, ξ1 = calc_2fast_xi(ℓ, νν)
@@ -38,10 +38,45 @@ function test_xi(ℓ)
 end
 
 
+function test_xi_derivs()
+    # get quadosc curve
+    rq, ξq0 = get_quadosc_xi(0)
+    ξq = Spline1D(rq, ξq0[:,3], k=5)
+    ξq′(r) = derivative(ξq, r; nu=1)
+    ξq″(r) = derivative(ξq, r; nu=2)
+
+    # get 2-FAST curve
+    r0, ξ00 = calc_2fast_xi(0, [0])
+    r1, ξ1m1 = calc_2fast_xi(1, [-1])
+    r2, ξ2m2 = calc_2fast_xi(2, [-2])
+    ξ = Spline1D(r0, ξ00[1])
+    ξ′ = Spline1D(r1, - ξ1m1[1] ./ r1)
+    ξ″ = Spline1D(r2, (ξ2m2[1] - ξ1m1[1]) ./ r2.^2)
+
+    # ξ
+    print("Testing ξ(r) ... ")
+    r = rq[1:10:end]
+    @test all(isapprox.(ξ(r), ξq(r), atol=1e-5, rtol=1e-5))
+    println("passed")
+
+    # ξ′
+    print("Testing ξ′(r) ... ")
+    r = r[r .>= 5]
+    @test all(isapprox.(ξ′(r), ξq′(r), atol=1e-5, rtol=1e-5))
+    println("passed")
+
+    # ξ″
+    print("Testing ξ″(r) ... ")
+    @test all(isapprox.(ξ″(r), ξq″(r), atol=1e-5, rtol=1e-5))
+    println("passed")
+end
+
+
 function test_xi()
     for ℓ=0:4
-        test_xi(ℓ)
+        test_xiln(ℓ)
     end
+    test_xi_derivs()
 end
 
 
