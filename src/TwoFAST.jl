@@ -106,7 +106,7 @@ function calc_qbest(ell, nu; n1=0.9, n2=0.9999)
 
 	q = qbest
 	if !(qmin < q < qmax)
-		warn("Need suboptimal choice of q!")
+		#warn("Need suboptimal choice of q!")
         	q = (qmin + 2qmax) / 3
 	end
 
@@ -131,11 +131,11 @@ function xicalc{T,Tq}(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000
 		qnu = q
 	else
 		qnu, qbest, qmin, qmax = calc_qbest(ell, nu)
-		println()
-		println("  qbest: $qbest")
-		println("  qmin:  $qmin")
-		println("  qmax:  $qmax")
-		println("  (ell,nu) = ($ell,$nu), qnu=$qnu")
+		#println()
+		#println("  qbest: $qbest")
+		#println("  qmin:  $qmin")
+		#println("  qmax:  $qmax")
+		#println("  (ell,nu) = ($ell,$nu), qnu=$qnu")
 		if qmin > qmax
 		    error("Integral does not converge!")
 		end

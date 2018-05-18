@@ -1,49 +1,61 @@
 #!/usr/bin/env julia
 
+include("XiLib.jl")
 
 module GraphicTests
 
 using TwoFAST
+using XiLib
+using PyCall
 using PyPlot
 using Dierckx
+@pyimport matplotlib.gridspec as gridspec
 
 
-function main()
-    d = readdlm("data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
-    pk = Spline1D(d[:,1], d[:,2])
-
-    ℓ = 0
-
-    # get 2-FAST results
-    kwargs = Dict(:N => 1024, :kmin => 1e-5, :kmax => 1e3, :r0 => 1e-3)
-    r0 = xicalc(pk, 0, 0; kwargs...)[1]
-    xi0 = [xicalc(pk, ℓ, ν; kwargs...)[2] for ν=-2:3+ℓ]
-    @show typeof(xi0)
-
-    # get quadosc results
-    xi1 = readdlm("data/xiquadosc_plus_ell$ℓ.tsv")
-    r1 = xi1[:,1]
+function plot_xi_rdiff(ℓ)
+    νν = -2:3
+    r0, xi0 = get_quadosc_xi(ℓ)
+    r1, xi1 = calc_2fast_xi(ℓ, νν)
 
     # plot
     figure()
-    for i=1:size(xi1,2)
-        plot(r1, xi1[:,i], "0.5")
+    gs = gridspec.GridSpec(2, 1, height_ratios=[3,1])
+    gs[:update](hspace=0)
+    ax1 = subplot(gs[1])
+    ax2 = subplot(gs[2], sharex=ax1)
+    setp(ax1[:get_xticklabels](), visible=false)
+    ax1[:hlines](0.0, 0.0, 200, color="0.85", zorder=-2)
+    ax2[:hlines](0.0, 0.0, 200, color="0.85", zorder=-2)
+    for i=eachindex(xi1)
+        ν = νν[i]
+        s0 = Spline1D(r0, xi0[:,i])
+        s1 = Spline1D(r1, xi1[i])
+        r = r0[1:10:end]
+        diff = s1(r) - s0(r)
+        rdiff = diff ./ s0(r)
+        ax1[:plot](r0, xi0[:,i], "0.5", alpha=0.75, zorder=-1)
+        ax1[:plot](r1, xi1[i], "--", label="\$\\xi_$ℓ^{$ν}(r)\$")
+        ax2[:plot](r, rdiff, "--")
     end
-    for i=eachindex(xi0)
-        ν = (-2:3+ℓ)[i]
-        plot(r0, xi0[i], "--", label="\$\\xi_$ℓ^{$ν}(r)\$")
-    end
-    xlim(0, 300)
-    ylim(-0.01, 0.05)
-    xlabel(L"r")
-    ylabel(L"\xi_\ell^\nu(r)")
-    legend()
+    ax1[:set_xlim](0, 200)
+    ax1[:set_ylim](-0.01, 0.05)
+    ax2[:set_ylim](-0.00019, 0.00019)
+    ax2[:set_xlabel](L"r")
+    ax1[:set_ylabel](L"\xi_\ell^\nu(r)")
+    ax2[:set_ylabel](L"\Delta\xi/\xi")
+    ax1[:legend]()
+    tight_layout()
 end
 
 
 end
 
-GraphicTests.main()
+close("all")
+GraphicTests.plot_xi_rdiff(0)
+GraphicTests.plot_xi_rdiff(1)
+GraphicTests.plot_xi_rdiff(2)
+GraphicTests.plot_xi_rdiff(3)
+GraphicTests.plot_xi_rdiff(4)
 
 
 # vim: set sw=4 et sts=4 :

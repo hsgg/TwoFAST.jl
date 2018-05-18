@@ -61,7 +61,8 @@ end
 
 function corrfunc(rr, pwr, ell=0, nu=0; reltol=1e-10, order=127)
 	print("ξ(r), ℓ=$ell, ν=$nu:")
-	if ell == 0 && nu == -2
+	if (nu == -2 && ell ∈ [0, 1, 2, 3, 4] ||
+	    nu == -1 && ell ∈ [1])
 		@time nothing
 		return fill(NaN, length(rr)), fill(NaN, length(rr))
 	end
@@ -145,14 +146,14 @@ function more_xi(ℓ=0)
 	pkin = PkFile(fname)#; ns=0.9672)
 	r = linspace(1.0, 200.0, Int(199/0.1) + 1)
 
-	xiℓ = [corrfunc(r, pkin, ℓ, ν)[1] for ν=-2:3+ℓ]
+	xiℓ = [corrfunc(r, pkin, ℓ, ν)[1] for ν=-2:3]
 
 	writedlm("data/xiquadosc_plus_ell$ℓ.tsv", [r xiℓ...])
 end
 
 
 #main()
-#more_xi(0)
+more_xi(0)
 more_xi(1)
 more_xi(2)
 more_xi(3)
