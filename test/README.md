@@ -1,12 +1,20 @@
 # Tests
 
+## Real-space projection
+
+We compare with the `quadosc` algorithm.
+
+
+## Spherical Bessel projection
+
 There are several kinds of test:
 
     * Compare `TwoFAST` with previous versions of itself
                         
-    * Compare `TwoFAST` with Nemo/Arb
+    * Compare `TwoFAST` with Nemo/Arb (useful to test 2F1 and recursion)
                         
-    * Compare `TwoFAST` with Quadosc, Lucas~1995, ...
+    * Compare `TwoFAST` with Lucas~1995, both along ℓ and along χ, possibly
+      along Δℓ
 
 They have different levels of usefulness. Comparing TwoFAST with a previous
 version of itself has the advantage of detecting algorithm changes. However,
@@ -21,3 +29,10 @@ relations.
 
 Finally, comparing `TwoFAST` with other high-precision algorithms is useful for
 testing the full chain from the power spectrum to the result.
+
+
+### Along ℓ
+
+The first test tests along ℓ. We repeat the test for several ratios R=χ'/χ and
+several χ. Furthermore, we do the test for (j,j')=(0,0),(0,2),(2,0),(2,2), thus
+we get some limited testing in the Δℓ direction.
