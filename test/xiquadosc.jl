@@ -10,7 +10,7 @@ println("nworkers: ", nworkers())
 
 @everywhere dir = "/home/hsgg/research/hgebhardt/code/mypy"
 try
-	@everywhere include("$dir/pkspec.jl")
+	@everywhere include("$dir/pkspec.jl")  # make sure to use same spline!
 	@everywhere include("$dir/bisect.jl")
 	@everywhere include("$dir/quadosc.jl")
 	@everywhere include("$dir/sphbes/sphbes.jl")
@@ -60,10 +60,10 @@ end
 end
 
 function corrfunc(rr, pwr, ell=0, nu=0; reltol=1e-10, order=127)
-	print("ξ(r), ℓ=$ell, ν=$nu:")
+	print("ξ(r), ℓ=$ell, ν=$nu: ")
 	if (nu == -2 && ell ∈ [0, 1, 2, 3, 4] ||
 	    nu == -1 && ell ∈ [1])
-		@time nothing
+		println("Skipping...")
 		return fill(NaN, length(rr)), fill(NaN, length(rr))
 	end
 	@time tmp = pmap(r -> corrfunc(r, pwr, ell, nu, reltol=reltol, order=order), rr)
@@ -74,70 +74,6 @@ function corrfunc(rr, pwr, ell=0, nu=0; reltol=1e-10, order=127)
 		xie[i] = tmp[i][2]
 	end
 	return xi, xie
-end
-
-
-
-function main()
-	fname = "data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat"
-	pkin = PkFile(fname)#; ns=0.9672)
-	r = linspace(1.0, 200.0, Int(199/0.1) + 1)
-
-	# Note: Some of the combinations of ell and nu below should converge,
-	# but take a long, long time.
-
-	print("xi, l=0, nu=0: ")
-	@time xi00, xi00e = corrfunc(r, pkin, 0, 0, reltol=1e-13, order=511)
-	# Note: reltol=1e-14 doesn't improve it, but takes 12 hours instead of 2 minutes!
-
-	#print("xi, l=0, nu=-2:")
-	#@time xi0m2, xi0m2e = corrfunc(r, pkin, 0, -2)  # fails
-	xi0m2 = NaN * zeros(length(r))
-	xi0m2e = Inf * zeros(length(r))
-
-	#print("xi, l=1, nu=-1:")
-	#@time xi1m1, xi1m1e = corrfunc(r, pkin, 1, -1)  # takes super-long
-	xi1m1 = NaN * zeros(length(r))
-	xi1m1e = Inf * zeros(length(r))
-
-	#print("xi, l=1, nu=1: ")
-	#@time xi11, xi11e = corrfunc(r, pkin, 1, 1)
-	xi11 = NaN * zeros(length(r))
-	xi11e = Inf * zeros(length(r))
-
-	print("xi, l=1, nu=3: ")
-	@time xi13, xi13e = corrfunc(r, pkin, 1, 3)
-	#xi13 = NaN * zeros(length(r))
-	#xi13e = Inf * zeros(length(r))
-
-	#print("xi, l=2, nu=-2:")
-	#@time xi2m2 xi2m2e = corrfunc(r, pkin, 2, -2)  # fails
-	xi2m2 = NaN * zeros(length(r))
-	xi2m2e = Inf * zeros(length(r))
-
-	print("xi, l=2, nu=0: ")
-	@time xi20, xi20e = corrfunc(r, pkin, 2, 0)
-	#xi20 = NaN * zeros(length(r))
-	#xi20e = Inf * zeros(length(r))
-
-	#print("xi, l=3, nu=-1:")
-	#@time xi3m1, xi3m1e = corrfunc(r, pkin, 3, -1)
-	xi3m1 = NaN * zeros(length(r))
-	xi3m1e = Inf * zeros(length(r))
-
-	#print("xi, l=3, nu=1: ")
-	#@time xi31, xi31e = corrfunc(r, pkin, 3, 1)
-	xi31 = NaN * zeros(length(r))
-	xi31e = Inf * zeros(length(r))
-
-	print("xi, l=4, nu=0: ")
-	@time xi40, xi40e = corrfunc(r, pkin, 4, 0)
-	#xi40 = NaN * zeros(length(r))
-	#xi40e = Inf * zeros(length(r))
-
-
-	writedlm("data/xiquadosc.dat", [r xi00 xi0m2 xi1m1 xi11 xi13 xi2m2 xi20 xi3m1 xi31 xi40])
-	writedlm("data/xiquadoscerr.dat", [r xi00e xi0m2e xi1m1e xi11e xi13e xi2m2e xi20e xi3m1e xi31e xi40e])
 end
 
 
@@ -152,7 +88,6 @@ function more_xi(ℓ=0)
 end
 
 
-#main()
 more_xi(0)
 more_xi(1)
 more_xi(2)
