@@ -8,9 +8,10 @@ println("nprocs: ", nprocs())
 println("nworkers: ", nworkers())
 
 
-@everywhere dir = "/home/hsgg/research/hgebhardt/code/mypy"
+@everywhere include("PkSpectra.jl")
+
+@everywhere dir = "$(homedir())/research/hgebhardt/code/mypy"
 try
-	@everywhere include("$dir/pkspec.jl")  # make sure to use same spline!
 	@everywhere include("$dir/bisect.jl")
 	@everywhere include("$dir/quadosc.jl")
 	@everywhere include("$dir/sphbes/sphbes.jl")
@@ -21,7 +22,7 @@ catch
 	error("Cannot load essential libraries.")
 end
 
-@everywhere using PkSpectrum
+using PkSpectra
 @everywhere using QuadOsc
 @everywhere using SphBes
 @everywhere using QuadGK: quadgk
@@ -79,7 +80,7 @@ end
 
 function more_xi(ℓ=0)
 	fname = "data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat"
-	pkin = PkFile(fname)#; ns=0.9672)
+	pkin = PkSpectrum(fname)
 	r = linspace(1.0, 200.0, Int(199/0.1) + 1)
 
 	xiℓ = [corrfunc(r, pkin, ℓ, ν)[1] for ν=-2:3]
