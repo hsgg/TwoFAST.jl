@@ -1,5 +1,6 @@
 #!/usr/bin/env julia
 
+include("PkSpectra.jl")
 include("TwoFASTTestLib.jl")
 
 
@@ -12,6 +13,7 @@ else
     using Test
 end
 using Dierckx
+using PkSpectra
 using TwoFASTTestLib
 
 
@@ -130,8 +132,7 @@ end
 
 function test_all()
     mkpath("out")
-    d = readdlm("data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
-    pk = Spline1D(d[:,1], d[:,2])
+    pk = PkSpectrum
 
     wlrr(pk)
     fell0, lmax0, mm0, RR0, ellmax0 = TwoFAST.read_fell_lmax("out/fell_lmax_v23.fits")

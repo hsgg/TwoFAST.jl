@@ -79,8 +79,7 @@ end
 
 
 function more_xi(ℓ=0)
-	fname = "data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat"
-	pkin = PkSpectrum(fname)
+	pkin = PkSpectrum()
 	r = linspace(1.0, 200.0, Int(199/0.1) + 1)
 
 	xiℓ = [corrfunc(r, pkin, ℓ, ν)[1] for ν=-2:3]

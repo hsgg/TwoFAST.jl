@@ -8,7 +8,7 @@ export calc_2fast_xi
 export calc_xiderivs
 
 using TwoFAST
-using Dierckx
+using PkSpectra
 
 
 function get_quadosc_xi(ℓ)
@@ -20,8 +20,7 @@ end
 
 
 function calc_2fast_xi(ℓ, νν)
-    d = readdlm("data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
-    pk = Spline1D(d[:,1], d[:,2])
+    pk = PkSpectrum()
     kwargs = Dict(:N => 1024, :kmin => 1e-6, :kmax => 1e2, :r0 => 1e-2)
     r = xicalc(pk, 0, 0; kwargs...)[1]
     xi = [xicalc(pk, ℓ, ν; kwargs...)[2] for ν=νν]

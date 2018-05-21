@@ -1,5 +1,6 @@
 #!/usr/bin/env julia
 
+include("PkSpectra.jl")
 include("TwoFASTTestLib.jl")
 
 module GraphicTests
@@ -110,11 +111,11 @@ end
 end
 
 close("all")
-#GraphicTests.plot_xi_rdiff(0)
-#GraphicTests.plot_xi_rdiff(1)
-#GraphicTests.plot_xi_rdiff(2)
-#GraphicTests.plot_xi_rdiff(3)
-#GraphicTests.plot_xi_rdiff(4)
+GraphicTests.plot_xi_rdiff(0)
+GraphicTests.plot_xi_rdiff(1)
+GraphicTests.plot_xi_rdiff(2)
+GraphicTests.plot_xi_rdiff(3)
+GraphicTests.plot_xi_rdiff(4)
 GraphicTests.plot_xi_derivs()
 
 
