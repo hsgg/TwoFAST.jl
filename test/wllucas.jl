@@ -82,7 +82,8 @@ end
 
 
 # calc along ℓ, Δℓ=-4,-2,0,2,4
-function calc_wlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,800,900,1000,1200])
+function calc_wldlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,800,900,1000,1200],
+		     fname="data/wldl_chi$(χ)_R$(R).tsv")
 	pk = PkSpectrum()
 
 	ell = Int[]
@@ -103,15 +104,100 @@ function calc_wlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,80
 		append!(ellgood, [ℓ ∈ ells for ℓ ∈ ellrange])
 	end
 
-	fname = "data/wl_chi$(χ)_R$(R).tsv"
 	writedlm(fname, [ell wlm4 wlm2 wl0 wlp2 wlp4 ellgood])
 	println("Created '$fname'.")
 end
 
+
+function wljj_dl(ell, j1, j2, wldl; abs_coeff=false)
+	@assert j1 == 0 || j1 == 2
+	@assert j2 == 0 || j2 == 2
+	f0 = ell * (ell - 1) / ((2 * ell - 1) * (2 * ell + 1))
+	f1 = - (2 * ell^2 + 2 * ell - 1) / ((2 * ell - 1) * (2 * ell + 3))
+	f2 = (ell + 1) * (ell + 2) / ((2 * ell + 1) * (2 * ell + 3))
+	if abs_coeff
+		f0 = abs(f0)
+		f1 = abs(f1)
+		f2 = abs(f2)
+	end
+	if j1 == 0 && j2 == 0
+		w = wldl[0,0]
+	elseif j1 == 0 && j2 == 2
+		w0 = wldl[0,-2]
+		w1 = wldl[0, 0]
+		w2 = wldl[0,+2]
+		w = f0 * w0 + f1 * w1 + f2 * w2
+	elseif j1 == 2 && j2 == 0
+		w0 = wldl[-2,0]
+		w1 = wldl[ 0,0]
+		w2 = wldl[+2,0]
+		w = f0 * w0 + f1 * w1 + f2 * w2
+	else # j1 == 2 && j2 == 2
+		w00 = wldl[-2,-2]
+		w01 = wldl[-2, 0]
+		w02 = wldl[-2,+2]
+		w10 = wldl[ 0,-2]
+		w11 = wldl[ 0, 0]
+		w12 = wldl[ 0,+2]
+		w20 = wldl[+2,-2]
+		w21 = wldl[+2, 0]
+		w22 = wldl[+2,+2]
+		w = ( f0*f0*w00 + f0*f1*w01 + f0*f2*w02
+		+ f1*f0*w10 + f1*f1*w11 + f1*f2*w12
+		+ f2*f0*w20 + f2*f1*w21 + f2*f2*w22 )
+	end
+	return w
+end
+
+
+# convert wldl -> wljj
+function wldl_to_wljj(infname, outfname; abs_coeff=false)
+	wll = readdlm(infname)
+	wldl = Dict()
+	ell = Array{Int}(Int(sum(wll[:,end])))
+	wjj = Array{Float64}(length(ell), 4)
+	m4 = 2
+	m2 = 3
+	e0 = 4
+	p2 = 5
+	p4 = 6
+	n = 1
+	for m=1:size(wll,1)
+		Bool(wll[m,end]) || continue  # if necessary Δℓ are not present, skip this
+		ℓ = Int(wll[m,1])
+		wldl[-2,-2] = wll[m-2,e0]
+		wldl[ 0,-2] = wll[m  ,m2]
+		wldl[ 2,-2] = wll[m+2,m4]
+		wldl[-2, 0] = wll[m-2,p2]
+		wldl[ 0, 0] = wll[m  ,e0]
+		wldl[ 2, 0] = wll[m+2,m2]
+		wldl[-2, 2] = wll[m-2,p4]
+		wldl[ 0, 2] = wll[m  ,p2]
+		wldl[ 2, 2] = wll[m+2,e0]
+		ell[n] = ℓ
+		wjj[n, 1] = wljj_dl(ℓ, 0, 0, wldl; abs_coeff=abs_coeff)
+		wjj[n, 2] = wljj_dl(ℓ, 0, 2, wldl; abs_coeff=abs_coeff)
+		wjj[n, 3] = wljj_dl(ℓ, 2, 0, wldl; abs_coeff=abs_coeff)
+		wjj[n, 4] = wljj_dl(ℓ, 2, 2, wldl; abs_coeff=abs_coeff)
+		n += 1
+	end
+	writedlm(outfname, [ell wjj])
+	println("Created '$outfname'.")
+end
+
+
+# along ℓ
+function calc_wlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,800,900,1000,1200])
+	#calc_wldlχR(χ, R, elllist, "data/wldl_chi$(χ)_R$(R).tsv")
+	wldl_to_wljj("data/wldl_chi$(χ)_R$(R).tsv", "data/wljj_chi$(χ)_R$(R).tsv")
+end
+
+
 end # module
-using WlLucas
 
 
-WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
+#WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
+WlLucas.calc_wlχR(2303.0, 1.1)
+#WlLucas.calc_wlχR(2303.0, 0.9)
 
 #χ = logspace(0, 4)
