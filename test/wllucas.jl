@@ -4,8 +4,8 @@
 # Written by Henry Gebhardt (2016-2017)
 
 using Hwloc
-#addprocs(Hwloc.num_physical_cores())
-addprocs(4)
+addprocs(Hwloc.num_physical_cores())
+#addprocs(4)
 println("hostname: ", gethostname())
 println("julia version: ", VERSION)
 println("nprocs: ", nprocs())
@@ -188,7 +188,7 @@ end
 
 # along ℓ
 function calc_wlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,800,900,1000,1200])
-	#calc_wldlχR(χ, R, elllist, "data/wldl_chi$(χ)_R$(R).tsv")
+	calc_wldlχR(χ, R, elllist, "data/wldl_chi$(χ)_R$(R).tsv")
 	wldl_to_wljj("data/wldl_chi$(χ)_R$(R).tsv", "data/wljj_chi$(χ)_R$(R).tsv")
 end
 
@@ -196,8 +196,8 @@ end
 end # module
 
 
-#WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
+WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
 WlLucas.calc_wlχR(2303.0, 1.1)
-#WlLucas.calc_wlχR(2303.0, 0.9)
+WlLucas.calc_wlχR(2303.0, 0.9)
 
 #χ = logspace(0, 4)
