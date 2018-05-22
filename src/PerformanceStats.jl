@@ -12,7 +12,6 @@ module PerformanceStats
 
 export +, timed_println
 import Base.+  # This is the function we want to extend
-import Base.prettyprint_getunits
 
 function +(x::Base.GC_Diff, y::Base.GC_Diff)
 	return Base.GC_Diff(
@@ -36,7 +35,7 @@ function +(x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
 		x[5] + y[5])	# GC_Diff object
 end
 
-function prettyprint_getunits(value::Int, units, factor)
+function prettyprint_getunits_now(value::Int, units, factor)
 	if value == 0 || value == 1
 		return value, units[1]
 	end
@@ -53,8 +52,8 @@ function timed_println(prefix, x::Tuple{Any, Float64, Int64, Float64, Base.GC_Di
 	mem_units = [" byte", " KB", " MB", " GB", " TB", " PB"]
 	cnt_units = ["", " k", " M", " G", " T", " P"]
 	allocs = x[5].malloc + x[5].realloc + x[5].poolalloc + x[5].bigalloc
-	bytes, mb = prettyprint_getunits(x[3], mem_units, 1024)
-	allocs, ma = prettyprint_getunits(allocs, cnt_units, 1000)
+	bytes, mb = prettyprint_getunits_now(x[3], mem_units, 1024)
+	allocs, ma = prettyprint_getunits_now(allocs, cnt_units, 1000)
 	s = string("$(round(x[2],6)) sec ($(allocs)$(ma) allocations: $(bytes)$(mb), $(round(100*x[4]/x[2],2))% gc time)")
 	println(prefix, s)
 end
