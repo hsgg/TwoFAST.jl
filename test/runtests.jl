@@ -84,72 +84,34 @@ end
 
 ##################### test wljj ##############################
 
-function wlrr(pk; prefix="out")
-    N = 4096
-    chi0 = 1e-3
-    kmin = 1e-5
-    kmax = 1e3
-    q = 1.1
-    ell = [42]  # only ell=42 for this run
-    RR = [0.6, 0.7, 0.8, 0.9, 1.0]
+function test_wl_χ2303_R(R)
+    d = readdlm("data/wljj_chi2303.0_R$(R).tsv")
+    ell = d[:,1]
+    luc00 = d[:,2]
+    luc02 = d[:,3]
+    luc20 = d[:,4]
+    luc22 = d[:,5]
 
-    # calculate M_ll at high ell, result gets saved to a file:
-    make_fell_lmax_cache(RR, maximum(ell), "$prefix/fell_lmax_v23.fits";
-                         N=N, q=q, G=log(kmax / kmin), k0=kmin, r0=chi0)
+    w00, w02, w20, w22 = calc_wlrr_χ2303(R, ell)
 
-    # calculate all M_ll, result gets saved to a file:
-    tt = calcMljj(RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q,
-                  fell_lmax_file="$prefix/fell_lmax_v23.fits",
-                  outfile="$prefix/Ml21-cache.bin")
-
-    # calculate wljj:
-    w00 = Array{Float64}(N, length(RR))
-    w02 = Array{Float64}(N, length(RR))
-    function outfunc(wjj, ell, rr, RR)
-        if ell == 42
-            w00[:,:] = wjj[1]
-            w02[:,:] = wjj[2]
-        end
-    end
-    rr = calcwljj(pk, RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q,
-                  cachefile="$prefix/Ml21-cache.bin", outfunc=outfunc)
-
-    # store result
-    writedlm("$prefix/wl42_jj00.tsv", [rr w00])
-    writedlm("$prefix/wl42_jj02.tsv", [rr w02])
-    println("Created '$prefix/wl42_jj00.tsv'.")
-    println("Created '$prefix/wl42_jj02.tsv'.")
+    @test all(isapprox.(w00, luc00, atol=5e-11))
+    @test all(isapprox.(w02, luc02, atol=5e-11))
+    @test all(isapprox.(w20, luc20, atol=5e-11))
+    @test w22[1] ≈ luc22[1] atol=5e-10
+    @test all(isapprox.(w22[2:end], luc22[2:end], atol=5e-11))
 end
 
-
-######################### call all tests ########################3
-
-function compare_tsv(f1, f2; atol=0.0, rtol=sqrt(eps()))
-    x0 = readdlm(f1)
-    x1 = readdlm(f2)
-    return all(isapprox.(x0, x1, atol=atol, rtol=rtol))
+function test_wl()
+    test_wl_χ2303_R(1.0)
+    test_wl_χ2303_R(1.1)
+    test_wl_χ2303_R(0.9)
 end
 
-function test_all()
-    mkpath("out")
-    pk = PkSpectrum
+end # module
 
-    wlrr(pk)
-    fell0, lmax0, mm0, RR0, ellmax0 = TwoFAST.read_fell_lmax("out/fell_lmax_v23.fits")
-    fell1, lmax1, mm1, RR1, ellmax1 = TwoFAST.read_fell_lmax("data/fell_lmax_v23.fits")
-    @test all(isapprox.(fell0, fell1))
-    @test all(lmax0 .== lmax1)
-    @test all(isapprox.(mm0, mm1, atol=0.0, rtol=eps(1.0)))
-    #run(`cmp fell_lmax_v23.fits data/fell_lmax_v23.fits`)
-    #run(`cmp Ml21-cache.bin data/Ml21-cache.bin`)
-    @test compare_tsv("out/wl42_jj00.tsv", "data/wl42_jj00.tsv", atol=1e-12, rtol=1e-10)
-    @test compare_tsv("out/wl42_jj02.tsv", "data/wl42_jj02.tsv", atol=1e-12, rtol=1e-10)
-end
-
-end
 
 TestTwoFAST.test_xi()
-TestTwoFAST.test_all()
+TestTwoFAST.test_wl()
 
 
 # vim: set sw=4 et sts=4 :

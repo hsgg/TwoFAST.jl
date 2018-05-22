@@ -2,6 +2,7 @@
 
 using Hwloc
 addprocs(Hwloc.num_physical_cores())
+#addprocs(4)
 println("hostname: ", gethostname())
 println("julia version: ", VERSION)
 println("nprocs: ", nprocs())
