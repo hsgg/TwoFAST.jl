@@ -157,6 +157,8 @@ function plot_cl(R=1.0, xmax=1200, y2max=1.5e-6)
     ax2[:plot](ell, w22 - luc22, label=L"diff, jj'=22")
     ax2[:set_ylabel](L"$\Delta w$")
     ax2[:ticklabel_format](style="sci", axis="y", scilimits=(0,0), useOffset=false)
+    #ax2[:get_yaxis]()[:get_offset_text]()[:set_y](0.5)
+    #ax2[:yaxis]()[:offsetText]()
 
     ax3[:plot](ell, (w00 - luc00) ./ luc00, label="rdiff, jj'=00", ls="--")
     ax3[:plot](ell, (w02 - luc02) ./ luc02, label="rdiff, jj'=02", ls="--")

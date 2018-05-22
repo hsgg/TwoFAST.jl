@@ -12,6 +12,7 @@ module PerformanceStats
 
 export +, timed_println
 import Base.+  # This is the function we want to extend
+import Base.prettyprint_getunits
 
 function +(x::Base.GC_Diff, y::Base.GC_Diff)
 	return Base.GC_Diff(
