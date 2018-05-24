@@ -35,7 +35,7 @@ function +(x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
 		x[5] + y[5])	# GC_Diff object
 end
 
-function prettyprint_getunits_now(value::Int, units, factor)
+function prettyprint_getunits_now(value, units, factor)
 	if value == 0 || value == 1
 		return value, units[1]
 	end
