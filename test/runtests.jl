@@ -84,7 +84,7 @@ end
 
 ##################### test wljj ##############################
 
-function test_wl_χ2303_R(R)
+function test_wl_χ2303_R(R, atol)
     d = readdlm("data/wljj_chi2303.0_R$(R).tsv")
     ell = d[:,1]
     luc00 = d[:,2]
@@ -94,17 +94,19 @@ function test_wl_χ2303_R(R)
 
     w00, w02, w20, w22 = calc_wlrr_χ2303(R, ell)
 
-    @test all(isapprox.(w00, luc00, atol=5e-11))
-    @test all(isapprox.(w02, luc02, atol=5e-11))
-    @test all(isapprox.(w20, luc20, atol=5e-11))
+    println("Testing R=$R...")
+    @test all(isapprox.(w00, luc00, atol=atol))
+    @test all(isapprox.(w02, luc02, atol=atol))
+    @test all(isapprox.(w20, luc20, atol=atol))
     @test w22[1] ≈ luc22[1] atol=5e-10
-    @test all(isapprox.(w22[2:end], luc22[2:end], atol=5e-11))
+    @test all(isapprox.(w22[2:end], luc22[2:end], atol=atol))
 end
 
 function test_wl()
-    test_wl_χ2303_R(1.0)
-    test_wl_χ2303_R(1.1)
-    test_wl_χ2303_R(0.9)
+    test_wl_χ2303_R(1.0, 5e-11)
+    test_wl_χ2303_R(1.1, 1e-11)
+    test_wl_χ2303_R(0.9, 1e-11)
+    test_wl_χ2303_R(0.8, 1e-12)
 end
 
 end # module

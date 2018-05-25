@@ -187,6 +187,7 @@ close("all")
 GraphicTests.plot_cl(1.0)
 GraphicTests.plot_cl(1.1)
 GraphicTests.plot_cl(0.9)
+GraphicTests.plot_cl(0.8)
 
 
 # vim: set sw=4 et sts=4 :

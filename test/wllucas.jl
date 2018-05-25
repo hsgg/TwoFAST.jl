@@ -196,8 +196,16 @@ end
 end # module
 
 
-WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
 WlLucas.calc_wlχR(2303.0, 1.1)
+WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
 WlLucas.calc_wlχR(2303.0, 0.9)
+WlLucas.calc_wlχR(2303.0, 0.8)
+WlLucas.calc_wlχR(2303.0, 0.7)
+WlLucas.calc_wlχR(2303.0, 0.6)
+WlLucas.calc_wlχR(2303.0, 0.5)
+WlLucas.calc_wlχR(2303.0, 0.4)
+WlLucas.calc_wlχR(2303.0, 0.3)
+WlLucas.calc_wlχR(2303.0, 0.2)
+WlLucas.calc_wlχR(2303.0, 0.1)
 
 #χ = logspace(0, 4)
