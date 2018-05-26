@@ -81,7 +81,7 @@ function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, beta=3
 end
 
 
-# calc along ℓ, Δℓ=-4,-2,0,2,4
+# calc along ℓ, Δℓ=0,±2,±4
 function calc_wldlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,800,900,1000,1200],
 		     fname="data/wldl_chi$(χ)_R$(R).tsv")
 	pk = PkSpectrum()
@@ -104,7 +104,7 @@ function calc_wldlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,
 		append!(ellgood, [ℓ ∈ ells for ℓ ∈ ellrange])
 	end
 
-	writedlm(fname, [ell wlm4 wlm2 wl0 wlp2 wlp4 ellgood])
+	writedlm(fname, [ell wl0 wlm2 wlp2 wlm4 wlp4 ellgood])
 	println("Created '$fname'.")
 end
 
@@ -156,10 +156,10 @@ function wldl_to_wljj(infname, outfname; abs_coeff=false)
 	wldl = Dict()
 	ell = Array{Int}(Int(sum(wll[:,end])))
 	wjj = Array{Float64}(length(ell), 4)
-	m4 = 2
+	e0 = 2
 	m2 = 3
-	e0 = 4
-	p2 = 5
+	p2 = 4
+	m4 = 5
 	p4 = 6
 	n = 1
 	for m=1:size(wll,1)
