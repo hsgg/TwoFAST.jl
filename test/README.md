@@ -36,3 +36,13 @@ testing the full chain from the power spectrum to the result.
 The first test tests along ℓ. We repeat the test for several ratios R=χ'/χ and
 several χ. Furthermore, we do the test for (j,j')=(0,0),(0,2),(2,0),(2,2), thus
 we get some limited testing in the Δℓ direction.
+
+
+### Along χ
+
+Gotta do this! Mostly a matter of copying stuff...
+
+
+### More derivatives
+
+Also need to add tests for more derivatives, e.g. (j,j')=(4,4), etc.
