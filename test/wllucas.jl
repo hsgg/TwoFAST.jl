@@ -4,7 +4,9 @@
 # Written by Henry Gebhardt (2016-2017)
 
 using Hwloc
-addprocs(Hwloc.num_physical_cores())
+println("nprocs: ", nprocs())
+println("nworkers: ", nworkers())
+addprocs(Hwloc.num_physical_cores() - nworkers())
 #addprocs(4)
 println("hostname: ", gethostname())
 println("julia version: ", VERSION)
@@ -109,6 +111,19 @@ function calc_wldlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,
 end
 
 
+# calc along χ, Δℓ=0,±2,±4
+function calc_wldlRℓ(R, ℓ, χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
+	pk = PkSpectrum()
+	wl0  = pmap(χ->wllrr(ℓ, ℓ,   χ, R*χ, pk), χrange)
+	wlm2 = pmap(χ->wllrr(ℓ, ℓ-2, χ, R*χ, pk), χrange)
+	wlp2 = pmap(χ->wllrr(ℓ, ℓ+2, χ, R*χ, pk), χrange)
+	wlm4 = pmap(χ->wllrr(ℓ, ℓ-4, χ, R*χ, pk), χrange)
+	wlp4 = pmap(χ->wllrr(ℓ, ℓ+4, χ, R*χ, pk), χrange)
+	writedlm(fname, [χrange wl0 wlm2 wlp2 wlm4 wlp4])
+	println("Created '$fname'.")
+end
+
+
 function wljj_dl(ell, j1, j2, wldl; abs_coeff=false)
 	@assert j1 == 0 || j1 == 2
 	@assert j2 == 0 || j2 == 2
@@ -193,19 +208,38 @@ function calc_wlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,80
 end
 
 
+# along χ
+function calc_wlRℓ(R, ℓ, χrange=logspace(0, 5, 800))
+	calc_wldlRℓ(R, ℓ-2, χrange; fname="data/wldl_R$(R)_ell$(ℓ-2).tsv")
+	calc_wldlRℓ(R, ℓ,   χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
+	calc_wldlRℓ(R, ℓ+2, χrange; fname="data/wldl_R$(R)_ell$(ℓ+2).tsv")
+	#wldl_to_wljj("data/wldl_R$(R)_ell$(ℓ).tsv", "data/wljj_R$(R)_ell$(ℓ).tsv")
+end
+
+
 end # module
 
 
-WlLucas.calc_wlχR(2303.0, 1.1)
-WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
-WlLucas.calc_wlχR(2303.0, 0.9)
-WlLucas.calc_wlχR(2303.0, 0.8)
-WlLucas.calc_wlχR(2303.0, 0.7)
-WlLucas.calc_wlχR(2303.0, 0.6)
-WlLucas.calc_wlχR(2303.0, 0.5)
-WlLucas.calc_wlχR(2303.0, 0.4)
-WlLucas.calc_wlχR(2303.0, 0.3)
-WlLucas.calc_wlχR(2303.0, 0.2)
-WlLucas.calc_wlχR(2303.0, 0.1)
+#WlLucas.calc_wlχR(2303.0, 1.1)
+#WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
+#WlLucas.calc_wlχR(2303.0, 0.9)
+#WlLucas.calc_wlχR(2303.0, 0.8)
+#WlLucas.calc_wlχR(2303.0, 0.7)
+#WlLucas.calc_wlχR(2303.0, 0.6)
+#WlLucas.calc_wlχR(2303.0, 0.5)
+#WlLucas.calc_wlχR(2303.0, 0.4)
+#WlLucas.calc_wlχR(2303.0, 0.3)
+#WlLucas.calc_wlχR(2303.0, 0.2)
+#WlLucas.calc_wlχR(2303.0, 0.1)
 
-#χ = logspace(0, 4)
+WlLucas.calc_wlRℓ(1.1, 42)
+WlLucas.calc_wlRℓ(1.0, 42)
+WlLucas.calc_wlRℓ(0.9, 42)
+WlLucas.calc_wlRℓ(0.8, 42)
+WlLucas.calc_wlRℓ(0.7, 42)
+WlLucas.calc_wlRℓ(0.6, 42)
+WlLucas.calc_wlRℓ(0.5, 42)
+WlLucas.calc_wlRℓ(0.4, 42)
+WlLucas.calc_wlRℓ(0.3, 42)
+WlLucas.calc_wlRℓ(0.2, 42)
+WlLucas.calc_wlRℓ(0.1, 42)

@@ -45,4 +45,8 @@ Gotta do this! Mostly a matter of copying stuff...
 
 ### More derivatives
 
-Also need to add tests for more derivatives, e.g. (j,j')=(4,4), etc.
+Also need to add tests for more derivatives, e.g. (j,j')=(4,4), etc. This
+requires getting the doublemiller for recursion along Δℓ working, then it
+should be easy to generalize the tests along ℓ and χ. Furthermore, the
+development of the doublemiller branch will add relevant tests of the ₂F₁
+function, comparing with Nemo.
