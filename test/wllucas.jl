@@ -6,7 +6,7 @@
 using Hwloc
 println("nprocs: ", nprocs())
 println("nworkers: ", nworkers())
-addprocs(Hwloc.num_physical_cores() - nworkers())
+addprocs(Hwloc.num_physical_cores() + 1 - nprocs())
 #addprocs(4)
 println("hostname: ", gethostname())
 println("julia version: ", VERSION)
