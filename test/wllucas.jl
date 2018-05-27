@@ -75,7 +75,7 @@ function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, beta=3
 	t = @elapsed I, E = quad_jar_jbt_log(f, -Inf, Inf, ell1, ell2, r1, r2;
 		n1=ell1>3?ell1^2:3,
 		n2=ell2>3?ell2^2:3,
-		reltol=reltol, abstol=1e-20, order=511)
+		reltol=reltol, abstol=1e-12, order=511)
 	I *= 2/pi
 	E *= 2/pi  # Note: Error E is not reliable
 	println("wl(ℓ₁=$ell1, ℓ₂=$ell2, r₁=$r1, r₂=$r2) = $I: took $t sec")
@@ -217,20 +217,36 @@ function calc_wlRℓ(R, ℓ, χrange=logspace(0, 5, 800))
 end
 
 
+# more tests
+function calc_single()
+	pk = PkSpectrum()
+	v = wllrr(42, 42, 7158.442208311312, 6542.5979874801815, pk)  # fast
+
+	v = wllrr(42, 42, 7158.442208311312, 6442.5979874801815, pk)  # slow
+	println("v=$v, -1.7195370954759132e-9")
+
+	v = wllrr(62, 58, 2303.0, 2533.3, pk)  # slow
+	println("v=$v, -2.8238003384349807e-10")
+end
+
+
 end # module
 
 
-#WlLucas.calc_wlχR(2303.0, 1.1)
-#WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
-#WlLucas.calc_wlχR(2303.0, 0.9)
-#WlLucas.calc_wlχR(2303.0, 0.8)
-#WlLucas.calc_wlχR(2303.0, 0.7)
-#WlLucas.calc_wlχR(2303.0, 0.6)
-#WlLucas.calc_wlχR(2303.0, 0.5)
-#WlLucas.calc_wlχR(2303.0, 0.4)
-#WlLucas.calc_wlχR(2303.0, 0.3)
-#WlLucas.calc_wlχR(2303.0, 0.2)
-#WlLucas.calc_wlχR(2303.0, 0.1)
+WlLucas.calc_single()
+
+
+WlLucas.calc_wlχR(2303.0, 1.1)
+WlLucas.calc_wlχR(2303.0, 1.0, [2:1200])
+WlLucas.calc_wlχR(2303.0, 0.9)
+WlLucas.calc_wlχR(2303.0, 0.8)
+WlLucas.calc_wlχR(2303.0, 0.7)
+WlLucas.calc_wlχR(2303.0, 0.6)
+WlLucas.calc_wlχR(2303.0, 0.5)
+WlLucas.calc_wlχR(2303.0, 0.4)
+WlLucas.calc_wlχR(2303.0, 0.3)
+WlLucas.calc_wlχR(2303.0, 0.2)
+WlLucas.calc_wlχR(2303.0, 0.1)
 
 WlLucas.calc_wlRℓ(1.1, 42)
 WlLucas.calc_wlRℓ(1.0, 42)
