@@ -213,11 +213,26 @@ function calc_wlRℓ(R, ℓ, χrange=logspace(0, 5, 800))
 	calc_wldlRℓ(R, ℓ-2, χrange; fname="data/wldl_R$(R)_ell$(ℓ-2).tsv")
 	calc_wldlRℓ(R, ℓ,   χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
 	calc_wldlRℓ(R, ℓ+2, χrange; fname="data/wldl_R$(R)_ell$(ℓ+2).tsv")
-	#wldl_to_wljj("data/wldl_R$(R)_ell$(ℓ).tsv", "data/wljj_R$(R)_ell$(ℓ).tsv")
+	χ = readdlm("data/wldl_R$(R)_ell$(ℓ).tsv")[:,1]
+	wll = Dict()
+	wll[-2,-2] = readdlm("data/wldl_R$(R)_ell$(ℓ-2).tsv")[:,2]
+	wll[-2, 0] = readdlm("data/wldl_R$(R)_ell$(ℓ-2).tsv")[:,4]
+	wll[-2, 2] = readdlm("data/wldl_R$(R)_ell$(ℓ-2).tsv")[:,6]
+	wll[ 0,-2] = readdlm("data/wldl_R$(R)_ell$(ℓ).tsv")[:,3]
+	wll[ 0, 0] = readdlm("data/wldl_R$(R)_ell$(ℓ).tsv")[:,2]
+	wll[ 0, 2] = readdlm("data/wldl_R$(R)_ell$(ℓ).tsv")[:,4]
+	wll[+2,-2] = readdlm("data/wldl_R$(R)_ell$(ℓ+2).tsv")[:,5]
+	wll[+2, 0] = readdlm("data/wldl_R$(R)_ell$(ℓ+2).tsv")[:,3]
+	wll[+2, 2] = readdlm("data/wldl_R$(R)_ell$(ℓ+2).tsv")[:,2]
+	w00 = wljj_dl(ℓ, 0, 0, wll)
+	w02 = wljj_dl(ℓ, 0, 2, wll)
+	w20 = wljj_dl(ℓ, 2, 0, wll)
+	w22 = wljj_dl(ℓ, 2, 2, wll)
+	writedlm("data/wljj_R$(R)_ell$(ℓ).tsv", [χ w00 w02 w20 w22])
 end
 
 
-# more tests
+# more tests, because some parameter combinations take a long time!
 function calc_single()
 	pk = PkSpectrum()
 	v = wllrr(42, 42, 7158.442208311312, 6542.5979874801815, pk)  # fast
