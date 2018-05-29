@@ -103,16 +103,23 @@ function test_wl_χ2303_R(R, atol)
 end
 
 function test_wl()
-    test_wl_χ2303_R(1.0, 5e-11)
     test_wl_χ2303_R(1.1, 1e-11)
+    test_wl_χ2303_R(1.0, 2e-10)
     test_wl_χ2303_R(0.9, 1e-11)
     test_wl_χ2303_R(0.8, 1e-12)
+    test_wl_χ2303_R(0.7, 1e-11)
+    test_wl_χ2303_R(0.6, 1e-11)
+    test_wl_χ2303_R(0.5, 2e-11)
+    test_wl_χ2303_R(0.4, 1e-11)
+    test_wl_χ2303_R(0.3, 1e-11)
+    test_wl_χ2303_R(0.2, 1e-11)
+    test_wl_χ2303_R(0.1, 1e-11)
 end
 
 end # module
 
 
-TestTwoFAST.test_xi()
+#TestTwoFAST.test_xi()
 TestTwoFAST.test_wl()
 
 

@@ -218,8 +218,8 @@ end
 # along χ
 function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6)
     println("plot_cl_χ(ℓ=$ℓ, jjidx=$jjidx)...")
-    #RR = [1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-    RR = [0.9]
+    RR = [1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+    #RR = [0.9]
 
     # get Lucas data
     luc = Dict()
@@ -273,10 +273,11 @@ function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6)
 end
 
 
-
 end # module
 
+
 close("all")
+
 #GraphicTests.plot_xi_rdiff(0)
 #GraphicTests.plot_xi_rdiff(1)
 #GraphicTests.plot_xi_rdiff(2)
@@ -284,19 +285,23 @@ close("all")
 #GraphicTests.plot_xi_rdiff(4)
 #GraphicTests.plot_xi_derivs()
 
-#GraphicTests.plot_cl(1.0)
-#GraphicTests.plot_cl(1.1)
-#GraphicTests.plot_cl(0.9)
-#GraphicTests.plot_cl(0.8)
-#GraphicTests.plot_cl(0.7)
-#GraphicTests.plot_cl(0.6)
-#GraphicTests.plot_cl(0.5)
-#GraphicTests.plot_cl(0.4)
-#GraphicTests.plot_cl(0.3)
-#GraphicTests.plot_cl(0.2)
-#GraphicTests.plot_cl(0.1)
+GraphicTests.plot_cl(1.0)
+GraphicTests.plot_cl(1.1)
+GraphicTests.plot_cl(0.9)
+GraphicTests.plot_cl(0.8)
+GraphicTests.plot_cl(0.7)
+GraphicTests.plot_cl(0.6)
+GraphicTests.plot_cl(0.5)
+GraphicTests.plot_cl(0.4)
+GraphicTests.plot_cl(0.3)
+GraphicTests.plot_cl(0.2)
+GraphicTests.plot_cl(0.1)
 
 #GraphicTests.plot_cl_χ(42, 1)
+#GraphicTests.plot_cl_χ(42, 2)
+#GraphicTests.plot_cl_χ(42, 3)
+#GraphicTests.plot_cl_χ(42, 4)
 
+show()
 
 # vim: set sw=4 et sts=4 :

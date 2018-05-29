@@ -7,7 +7,7 @@ using Hwloc
 println("nprocs: ", nprocs())
 println("nworkers: ", nworkers())
 addprocs(Hwloc.num_physical_cores() + 1 - nprocs())
-#addprocs(4)
+#addprocs(4 + 1 - nprocs())
 println("hostname: ", gethostname())
 println("julia version: ", VERSION)
 println("nprocs: ", nprocs())
@@ -75,7 +75,7 @@ function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, beta=3
 	t = @elapsed I, E = quad_jar_jbt_log(f, -Inf, Inf, ell1, ell2, r1, r2;
 		n1=ell1>3?ell1^2:3,
 		n2=ell2>3?ell2^2:3,
-		reltol=reltol, abstol=1e-12, order=511)
+		reltol=reltol, abstol=1e-14, order=511)
 	I *= 2/pi
 	E *= 2/pi  # Note: Error E is not reliable
 	println("wl(ℓ₁=$ell1, ℓ₂=$ell2, r₁=$r1, r₂=$r2) = $I: took $t sec")
