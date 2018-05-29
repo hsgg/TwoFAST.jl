@@ -6,8 +6,8 @@ module TwoFASTTestLib
 export get_quadosc_xi
 export calc_2fast_xi
 export calc_xiderivs
-export wlrr
 export calc_wlrr_χ2303
+export calc_wlrr_ℓR
 
 using TwoFAST
 using PkSpectra
@@ -65,7 +65,7 @@ function wlrr(RR=[0.6, 0.7, 0.8, 0.9, 1.0], ell=[42]; prefix="out", N=4096,
     rr = calcwljj(pk, RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q,
                   cachefile="$prefix/Ml21-cache.bin", outfunc=outfunc)
 
-    return w00, w02, w20, w22
+    return rr, w00, w02, w20, w22
 end
 
 
@@ -77,12 +77,22 @@ function calc_wlrr_χ2303(R, ell)
     G = log(kmax / kmin)
     chi0 = χ / exp(G / 2)
     n = div(N,2) + 1
-    w00, w02, w20, w22 = wlrr([R], ell; N=N, chi0=chi0, kmin=kmin, kmax=kmax)
+    rr, w00, w02, w20, w22 = wlrr([R], ell; N=N, chi0=chi0, kmin=kmin, kmax=kmax)
     w00 = w00[n,1,:]
     w02 = w02[n,1,:]
     w20 = w20[n,1,:]
     w22 = w22[n,1,:]
     return w00, w02, w20, w22
+end
+
+
+function calc_wlrr_ℓR(ℓ, RR)
+    N = 4096
+    chi0 = 1e-3
+    kmin = 1e-5
+    kmax = 1e3
+    rr, w00, w02, w20, w22 = wlrr(RR, [ℓ]; N=N, chi0=chi0, kmin=kmin, kmax=kmax)
+    return rr, w00[:,:,1], w02[:,:,1], w20[:,:,1], w22[:,:,1]
 end
 
 
