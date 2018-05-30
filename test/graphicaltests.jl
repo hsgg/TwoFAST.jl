@@ -159,13 +159,12 @@ function plot_cl(R=1.0, xmax=1200, y2max=1.5e-6)
     println("plot_cl(R=$R)...")
 
     d = readdlm("data/wljj_chi2303.0_R$(R).tsv")
-    lucell = d[:,1]
+    ell = Array{Int}(d[:,1])
     luc00 = d[:,2]
     luc02 = d[:,3]
     luc20 = d[:,4]
     luc22 = d[:,5]
 
-    ell = lucell
     w00, w02, w20, w22 = calc_wlrr_χ2303(R, ell)
 
     fac = 1
@@ -180,10 +179,10 @@ function plot_cl(R=1.0, xmax=1200, y2max=1.5e-6)
     ax3 = subplot(gs[3], sharex=ax1)
     setp(ax1[:get_xticklabels](), visible=false)
     setp(ax2[:get_xticklabels](), visible=false)
-    ax1[:plot](lucell, fac * luc00, color="0.55")
-    ax1[:plot](lucell, fac * luc02, color="0.65")
-    ax1[:plot](lucell, fac * luc20, color="0.75")
-    ax1[:plot](lucell, fac * luc22, color="0.85")
+    ax1[:plot](ell, fac * luc00, color="0.55")
+    ax1[:plot](ell, fac * luc02, color="0.65")
+    ax1[:plot](ell, fac * luc20, color="0.75")
+    ax1[:plot](ell, fac * luc22, color="0.85")
     ax1[:plot](ell, fac * w00, label=L"(j,j')=(0,0)", ls="--")
     ax1[:plot](ell, fac * w02, label=L"(j,j')=(0,2)", ls="--")
     ax1[:plot](ell, fac * w20, label=L"(j,j')=(2,0)", ls="--")
@@ -224,8 +223,10 @@ function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6)
     # get Lucas data
     luc = Dict()
     lucχ = readdlm("data/wljj_R0.9_ell$(ℓ).tsv")[:,1]
+    sel = (0.75e1 .<= lucχ .<= 2e5)
+    lucχ = lucχ[sel]
     for R in RR
-        luc[R] = readdlm("data/wljj_R$(R)_ell$(ℓ).tsv")[:,jjidx+1]
+        luc[R] = readdlm("data/wljj_R$(R)_ell$(ℓ).tsv")[sel,jjidx+1]
     end
 
     # get 2-FAST data

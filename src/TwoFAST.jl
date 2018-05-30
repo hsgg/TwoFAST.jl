@@ -434,10 +434,8 @@ function BCDEfn(ell, dl, a, R)
 end
 
 
-function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
+function calc_2f1_RqmG{T}(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 			      G=log(1e4/1e-4), alpha=1e-4)
-	#fold, lold = calc_2f1_RqmG_orig(ell, R, dl; q=q, m=m, G=G, alpha=alpha)
-
 	t = 2 * T(pi) * m / G
 	n = q - 1 - im * t
 	a = n / 2 + dl / 2
@@ -481,10 +479,6 @@ function calc_2f1_RqmG_new{T}(ell, R::T, dl; q=1.0, m::Int=500,
 	#readline()
 	return fell, ell
 end
-
-
-#calc_2f1_RqmG = calc_2f1_RqmG_orig
-calc_2f1_RqmG = calc_2f1_RqmG_new
 
 
 #################### b+1 recursion ###########################
@@ -1139,7 +1133,7 @@ end
 
 ##################### fell_lmax cache ###########################
 
-function calc_fell_lmax(ellmax, mm, RR, q, G, alpha, dlrec, dlrecRg1)
+function calc_fell_lmax(ellmax::Integer, mm, RR, q, G, alpha, dlrec::Integer, dlrecRg1::Integer)
 	fell = Array{Complex{Float64}}(2, length(mm), length(RR))
 	lmax = Array{Int64}(length(mm), length(RR))
 	for j=1:length(RR)
@@ -1270,11 +1264,9 @@ function mymult_A_B_x!(Y, M, x, idxs, n)
 end
 
 
-
-
 ######################### public functions
 
-function make_fell_lmax_cache(RR, ellmax, fname="fell_lmax_v23.fits";
+function make_fell_lmax_cache(RR, ellmax::Integer, fname="fell_lmax_v23.fits";
 		N=1024, q=1.0, G=log(1e4/1e-4), r0=1.0, k0=1e-4, dlrec=4, dlrecRg1=-4)
 	q = Float64(q)
 	N2 = div(N, 2) + 1

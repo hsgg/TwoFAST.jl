@@ -86,7 +86,7 @@ end
 
 function test_wl_χ2303_R(R, atol)
     d = readdlm("data/wljj_chi2303.0_R$(R).tsv")
-    ell = d[:,1]
+    ell = Array{Int}(d[:,1])
     luc00 = d[:,2]
     luc02 = d[:,3]
     luc20 = d[:,4]
@@ -130,6 +130,7 @@ function test_wl_ℓRR(ℓ)
             R = RR[i]
             w = wjj[jjidx][s1,i]
             lucw = luc[R][s2,jjidx]
+            ## some debugging help:
             #println("Testing jjidx=$jjidx, R=$R...")
             #for k=1:sum(s1)
             #    @show χ[s1][k], w[k]
