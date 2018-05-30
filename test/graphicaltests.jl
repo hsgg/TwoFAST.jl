@@ -297,10 +297,10 @@ GraphicTests.plot_cl(0.3)
 GraphicTests.plot_cl(0.2)
 GraphicTests.plot_cl(0.1)
 
-#GraphicTests.plot_cl_χ(42, 1)
-#GraphicTests.plot_cl_χ(42, 2)
-#GraphicTests.plot_cl_χ(42, 3)
-#GraphicTests.plot_cl_χ(42, 4)
+GraphicTests.plot_cl_χ(42, 1)
+GraphicTests.plot_cl_χ(42, 2)
+GraphicTests.plot_cl_χ(42, 3)
+GraphicTests.plot_cl_χ(42, 4)
 
 show()
 

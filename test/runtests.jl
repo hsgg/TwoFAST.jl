@@ -102,6 +102,51 @@ function test_wl_χ2303_R(R, atol)
     @test all(isapprox.(w22[2:end], luc22[2:end], atol=atol))
 end
 
+function test_wl_ℓRR(ℓ)
+    RR = [1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+
+    # get Lucas data
+    luc = Dict()
+    lucχ = readdlm("data/wljj_R0.9_ell$(ℓ).tsv")[:,1]
+    for R in RR
+        luc[R] = readdlm("data/wljj_R$(R)_ell$(ℓ).tsv")[:,2:end]
+    end
+
+    # get 2-FAST data
+    nfast = calc_wlrr_ℓR(ℓ, RR)
+    χ = nfast[1]
+    wjj = nfast[2:end]
+    idxmin = round(Int, length(χ) * 3/8) + 1
+    idxmax = length(χ)
+
+    # select
+    s1 = (10 .<= χ .<= 1.5e4)
+    s2 = (10 .<= lucχ .<= 1.5e4)
+
+    # iterate over jj
+    for jjidx=1:length(wjj)
+        # iterate over R
+        for i=1:length(RR)
+            R = RR[i]
+            w = wjj[jjidx][s1,i]
+            lucw = luc[R][s2,jjidx]
+            #println("Testing jjidx=$jjidx, R=$R...")
+            #for k=1:sum(s1)
+            #    @show χ[s1][k], w[k]
+            #    @show lucχ[s2][k], lucw[k]
+            #    diff = w[k] - lucw[k]
+            #    rdiff = (w[k] - lucw[k]) / lucw[k]
+            #    @show diff, rdiff
+            #    @test isapprox(w[k], lucw[k], atol=1e-8, rtol=5e-5)
+            #end
+            print("Testing jjidx=$jjidx, R=$R...")
+            @test all(isapprox.(w, lucw, atol=5e-10, rtol=5e-5))
+            println(" passed")
+        end
+    end
+end
+
+
 function test_wl()
     test_wl_χ2303_R(1.1, 1e-11)
     test_wl_χ2303_R(1.0, 2e-10)
@@ -114,12 +159,13 @@ function test_wl()
     test_wl_χ2303_R(0.3, 1e-11)
     test_wl_χ2303_R(0.2, 1e-11)
     test_wl_χ2303_R(0.1, 1e-11)
+    test_wl_ℓRR(42)
 end
 
 end # module
 
 
-#TestTwoFAST.test_xi()
+TestTwoFAST.test_xi()
 TestTwoFAST.test_wl()
 
 

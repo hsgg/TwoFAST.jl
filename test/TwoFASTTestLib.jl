@@ -87,11 +87,14 @@ end
 
 
 function calc_wlrr_ℓR(ℓ, RR)
-    N = 4096
-    chi0 = 1e-3
-    kmin = 1e-5
+    N = round(Int, 800 / 5 * 8)
+    expG = 1e5^(1280 / (800 - 1))
+    chi0 = expG^(-3/8)
     kmax = 1e3
+    kmin = kmax / expG
     rr, w00, w02, w20, w22 = wlrr(RR, [ℓ]; N=N, chi0=chi0, kmin=kmin, kmax=kmax)
+    @show chi0 N expG kmax kmin
+    @show extrema(rr) rr[1:5] size(rr) rr[160*3-1:160*3+1]
     return rr, w00[:,:,1], w02[:,:,1], w20[:,:,1], w22[:,:,1]
 end
 
