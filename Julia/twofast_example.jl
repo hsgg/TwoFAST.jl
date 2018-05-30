@@ -31,8 +31,8 @@ function wlrr(pk)
 	kmin = 1e-5
 	kmax = 1e3
 	q = 1.1
-	ell = [42]  # only ell=42 for this run
-	RR = [0.6, 0.7, 0.8, 0.9, 1.0]
+	ell = [42, 1000]  # only ell=42 for this run
+	RR = [0.6, 0.7, 0.8, 0.9, 0.998, 1.0]
 
 	# calculate M_ll at high ell:
 	make_fell_lmax_cache(RR, maximum(ell); N=N, q=q, G=log(kmax / kmin), k0=kmin, r0=chi0)

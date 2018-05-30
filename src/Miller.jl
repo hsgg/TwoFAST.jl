@@ -1,10 +1,107 @@
 module Miller
 
-export calc_fn
+export miller
 
 
 import Base.realmin
-realmin(arr::Array) = realmin(typeof(real(arr[1])))
+realmin(arr) = realmin(typeof(real(arr[1])))
+
+
+# find_nseedmin():
+#   This function finds an 'n' s.t. the approximatio n -> infty is valid.
+#   We do this by testing that the eigenvalues are close to each other.
+#   Specifically, we ensure that the eigenvalues are within an annulus in the
+#   complex plane, where the radius of the annulus has a radius 'fracdist'
+#   times the distance between the eigenvectors at infinity.
+function find_nseedmin(laminf1, laminf2, BCfn; fracdist=1/2.1)
+    rmax = fracdist * abs(laminf1 - laminf2)
+    #println("laminf: $laminf1\t$laminf2")
+    #println("rmax: $rmax")
+
+    # test whether we are in the 'n->infty' limit:
+    wearedone(n) = begin
+        B, C, D, E = BCfn(n)
+        lam1, lam2 = eigvals([B C; D E])
+        #println("$n: $lam1\t$lam2")
+        if abs(lam1 - laminf1) < rmax && abs(lam2 - laminf2) < rmax
+            return true
+        elseif abs(lam2 - laminf1) < rmax && abs(lam1 - laminf2) < rmax
+            return true
+        end
+        return false
+    end
+
+    # increase 'n' until we reach a satisfactory point:
+    n = 0
+    while !wearedone(n)
+        n = max(1, ceil(Int, 1.1n))
+    end
+    return n
+end
+
+
+# find_nseedmin():
+#   This function finds a minimum nseed s.t. an error of order 1e16 dies out
+#   when reaching 'nmax'.
+function find_nseedmin2(nmax, BCfn)
+    nseed = nmax
+    r = 1.0
+    while r > 1e-10
+        nseed += 1
+        B, C, D, E = BCfn(nseed)
+        lam1, lam2 = eigvals([B C; D E])
+        #println("$nseed($r): $lam1\t$lam2")
+        al1 = abs(lam1)
+        al2 = abs(lam2)
+        if al1 > al2
+            r *= al2 / al1
+        else
+            r *= al1 / al2
+        end
+    end
+    return nseed
+end
+
+
+# estimate_prec_loss():
+#   This function estimates the loss of precision by multiplying the ratio of
+#   eigenvalues.
+function estimate_prec_loss(nmax, BCfn)
+    r = 1.0
+    while nmax > 0
+        B, C, D, E = BCfn(nmax)
+        lam1, lam2 = eigvals([B C; D E])
+        #println("$nseed($r): $lam1\t$lam2")
+        al1 = abs(lam1)
+        al2 = abs(lam2)
+        if al1 > al2
+            r *= al2 / al1
+        else
+            r *= al1 / al2
+        end
+        nmax -= 1
+    end
+    return r
+end
+
+
+# get_ndiffmin():
+#   Calculate the number of iterations over which an error of order 1e16 dies
+#   out.
+function get_ndiffmin(laminf1, laminf2)
+    al1 = abs(laminf1)
+    al2 = abs(laminf2)
+    if al1 > al2
+        r = al2 / al1
+    else
+        r = al1 / al2
+    end
+    @assert r != 1
+    #println("laminf: $laminf1\t$laminf2")
+    prec = eps(typeof(real(laminf1)))
+    dn = ceil(Int, log(prec) / log(r))
+    return max(1, dn)
+end
 
 
 function calc_Amn_back(nbegin, nend, BCfn)
@@ -35,21 +132,24 @@ function scale_seed!(fmatch, A, fseed)
 end
 
 
-function calc_fseed(nseed, BCfn, f0, fasymp)
+function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
     A = calc_Amn_back(nseed, 0, BCfn)
+    #println("===> A: $A")
 
     if !all(isfinite.(A))
         # A not being finite means we hit the underflow gap.
-        #println("A not finite (ellseed=$ellseed)")
-        return typeof(f0)([Inf, Inf])
+        #println("===> A not finite (nseed=$nseed)")
+        return T([Inf, Inf])
     end
 
     if det(A) == 0 || !all(isfinite.(inv(A)))
         # inv(A) having infinite elements does not necessarily mean we
         # hit the underflow gap! It just means the forward recursion is
         # unstable.
+        #println("===> Returning asymptote")
         fseed = deepcopy(fasymp)
     else
+        #println("===> estimating fmax")
         fseed = A \ f0
     end
 
@@ -59,20 +159,27 @@ function calc_fseed(nseed, BCfn, f0, fasymp)
 end
 
 
-function calc_fmax_fn(nmax, BCfn, f0, fasymp; fmax_tol=1e-10, imax=20000,
-                      growth=:exponential, ndiff=10)
+function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiffmin, nminseed;
+                      fmax_tol=1e-10, imax=100, growth=:exponential, expfac=1.2)
     fmax = deepcopy(fasymp)
     rdiff = 1.0
-    nseed = nmax
-    while rdiff > fmax_tol && imax > 0
+    nseed = max(nmax, nminseed)
+    ndiff = ndiffmin
+    i = imax
+    while rdiff > fmax_tol && i > 0
         imax -= 1
         nseed += ndiff
         fseed = calc_fseed(nseed, BCfn, f0, fasymp)
         fmaxnew = calc_Amn_back(nseed, nmax, BCfn) * fseed
         rdiff = norm(fmaxnew - fmax) / norm(fmaxnew)
+        #println("nseed:   $nseed")
+        #println("fseed:   $fseed")
+        #println("fmax:    $fmax")
+        #println("fmaxnew: $fmaxnew")
+        #println("rdiff:   $rdiff")
         fmax[:] = fmaxnew
         if growth == :exponential
-            ndiff = ceil(Int, 1.5*ndiff)
+            ndiff = ceil(Int, expfac*(ndiff + 1 - ndiffmin)) + ndiffmin
         elseif growth != :linear
             error("unkown growth mode $growth")
         end
@@ -80,62 +187,91 @@ function calc_fmax_fn(nmax, BCfn, f0, fasymp; fmax_tol=1e-10, imax=20000,
             return fseed
         end
     end
-    if imax == 0
-        println("nmax:   $nmax")
-        println("nmatch: $nmatch")
-        println("fmatch: $fmatch")
-        println("fmax_tol: $fmax_tol")
-        println("imax: $imax")
-        error("Maximum iterations reached!")
+    if i == 0 && rdiff > fmax_tol
+        warn("nmax:  $nmax")
+        warn("nseed: $nseed")
+        warn("f0: $f0")
+        warn("fmax_tol: $fmax_tol")
+        warn("rdiff: $rdiff")
+        warn("imax,i: $imax,$i")
+        warn("Maximum iterations reached!")
     end
     return fmax
 end
 
 
-function calc_underflow_fmax(nmax, calc_f, fasymp)
+function calc_underflow_fmax(nmax, calc_f)
     nmin = 0
     nmid = div(nmin + nmax, 2)
-    fmax = deepcopy(fasymp)
+    # ensure we pass on the error when we find no solution:
+    fmax = Array{Complex128}([NaN, NaN])
     while nmid != nmin && nmid != nmax
         #println("==>$nmid:")
-        fseed = calc_f(nmid)
-        if !all(isfinite.(fseed)) || norm(fseed) < realmin(fseed)
+        fnew = calc_f(nmid)
+        if !all(isfinite.(fnew)) || norm(fnew) < realmin(fnew)
             nmax = nmid
         else
             nmin = nmid
-            fmax = fseed
+            fmax = fnew
         end
-        #println("<==$nmid: $nmin<n<$nmax, $fseed")
+        #println("<==$nmid: $nmin<n<$nmax, $fnew")
         nmid = div(nmin + nmax, 2)
     end
-    if maximum(abs.(fmax)) > 1e-100
-        println("WARN nmax=$nmax")
-        println("WARN calc_f=$calc_f")
-        println("WARN fasymp=$fasymp")
-        println("WARN nmin=$nmin, nmax=$nmax")
-        println("WARN fmax = $fmax")
-        println("WARN abs(fmax) = $(abs.(fmax))")
+    if all(isfinite.(fmax)) && maximum(abs.(fmax)) > 1e-100
+        warn("nmax=$nmax")
+        warn("calc_f=$calc_f")
+        warn("nmin=$nmin, nmax=$nmax")
+        warn("fmax = $fmax")
+        warn("abs(fmax) = $(abs.(fmax))")
         warn("Assumption may be violated: Result is not close to zero")
+        return Array{Complex128}([NaN, NaN]), nmin
     end
     return fmax, nmin
 end
 
 
-function calc_fn(n, BCfn::Function, f0, fasymp; calc_fmax=calc_fmax_fn)
-    fn = calc_fmax(n, BCfn, f0, fasymp)
-    if !all(isfinite.(fn)) || norm(fn) < realmin(fn)
-        calc_f(n) = calc_fmax(n, BCfn, f0, fasymp; growth=:linear, ndiff=1)
-        fn, n = calc_underflow_fmax(n, calc_f, fasymp)
+function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
+                    calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
+    # try fast linear growth
+    #println("trying fast linear growth:")
+    #=
+    precloss = estimate_prec_loss(n, BCfn)
+    if precloss < 1e-3
+        ndiffmin = get_ndiffmin(laminf1, laminf2)
+    else
+        ndiffmin = ceil(Int, n / 10)
     end
-    if !all(isfinite.(fn))
-        println("ERROR at n=$n")
-        println("BCfn: $BCfn")
-        println("f0:     $f0")
-        println("fn:     $fn")
-        println("fasymp: $fasymp")
-        error("Initial value could not be calculated!")
-    end
-    return fn, n
+    =#
+    ndiffmin = get_ndiffmin(laminf1, laminf2)
+    #println("ndiffmin: $ndiffmin")
+    fn1 = calc_fmax(n, BCfn, f0, fasymp, ndiffmin, 0, fmax_tol=fmax_tol,
+                   imax=100, growth=:linear, expfac=1.5)
+    all(isfinite.(fn1)) && return fn1, n
+
+    # try linear growth at nmax
+    #println("trying linear growth:")
+    fn2 = calc_fmax(n, BCfn, f0, fasymp, 1, 0, fmax_tol=fmax_tol,
+                   imax=100n+100ndiffmin, growth=:linear)
+    all(isfinite.(fn2)) && return fn2, n
+
+    # bisect
+    #println("bisecting:")
+    calc_f(n) = calc_fmax(n, BCfn, f0, fasymp, 1, 0; growth=:linear,
+                          fmax_tol=fmax_tol, imax=100n+100ndiffmin)
+    fn3, n3 = calc_underflow_fmax(n, calc_f)
+    all(isfinite.(fn3)) && return fn3, n3
+
+    warn("ERROR at n=$n")
+    warn("n3: $n3")
+    warn("ndiffmin: $ndiffmin")
+    warn("BCfn: $BCfn")
+    warn("f0:  $f0")
+    warn("fn1: $fn1")
+    warn("fn2: $fn2")
+    warn("fn3: $fn3")
+    warn("fasymp: $fasymp")
+    warn("Initial value could not be calculated!")
+    return f0, 0
 end
 
 
