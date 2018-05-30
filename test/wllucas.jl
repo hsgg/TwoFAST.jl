@@ -59,7 +59,8 @@ using PkSpectra
 using Quadjarjbt
 
 # Lucas 1995
-function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, beta=3; reltol=1e-10)
+function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, n=0; reltol=1e-10)
+	beta = 3 + n
 	function f(lnk)
 		if lnk > 236.0  # = log(cbrt(FLOAT_MAX))
 			ret = 0.0
@@ -85,7 +86,7 @@ end
 
 # calc along ℓ, Δℓ=0,±2,±4
 function calc_wldlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,800,900,1000,1200],
-		     fname="data/wldl_chi$(χ)_R$(R).tsv")
+		     n=0, fname="data/wldl_chi$(χ)_R$(R).tsv")
 	pk = PkSpectrum()
 
 	ell = Int[]
@@ -98,11 +99,11 @@ function calc_wldlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,
 	for ells ∈ elllist
 		ellrange = minimum(ells)-2:maximum(ells)+2
 		append!(ell, ellrange)
-		append!(wlm4, pmap(ℓ->wllrr(ℓ, ℓ-4, χ, R*χ, pk), ellrange))
-		append!(wlm2, pmap(ℓ->wllrr(ℓ, ℓ-2, χ, R*χ, pk), ellrange))
-		append!(wl0 , pmap(ℓ->wllrr(ℓ, ℓ,   χ, R*χ, pk), ellrange))
-		append!(wlp2, pmap(ℓ->wllrr(ℓ, ℓ+2, χ, R*χ, pk), ellrange))
-		append!(wlp4, pmap(ℓ->wllrr(ℓ, ℓ+4, χ, R*χ, pk), ellrange))
+		append!(wlm4, pmap(ℓ->wllrr(ℓ, ℓ-4, χ, R*χ, pk, n), ellrange))
+		append!(wlm2, pmap(ℓ->wllrr(ℓ, ℓ-2, χ, R*χ, pk, n), ellrange))
+		append!(wl0 , pmap(ℓ->wllrr(ℓ, ℓ,   χ, R*χ, pk, n), ellrange))
+		append!(wlp2, pmap(ℓ->wllrr(ℓ, ℓ+2, χ, R*χ, pk, n), ellrange))
+		append!(wlp4, pmap(ℓ->wllrr(ℓ, ℓ+4, χ, R*χ, pk, n), ellrange))
 		append!(ellgood, [ℓ ∈ ells for ℓ ∈ ellrange])
 	end
 
@@ -112,13 +113,13 @@ end
 
 
 # calc along χ, Δℓ=0,±2,±4
-function calc_wldlRℓ(R, ℓ, χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
+function calc_wldlRℓ(R, ℓ, n, χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
 	pk = PkSpectrum()
-	wl0  = pmap(χ->wllrr(ℓ, ℓ,   χ, R*χ, pk), χrange)
-	wlm2 = pmap(χ->wllrr(ℓ, ℓ-2, χ, R*χ, pk), χrange)
-	wlp2 = pmap(χ->wllrr(ℓ, ℓ+2, χ, R*χ, pk), χrange)
-	wlm4 = pmap(χ->wllrr(ℓ, ℓ-4, χ, R*χ, pk), χrange)
-	wlp4 = pmap(χ->wllrr(ℓ, ℓ+4, χ, R*χ, pk), χrange)
+	wl0  = pmap(χ->wllrr(ℓ, ℓ,   χ, R*χ, pk, n), χrange)
+	wlm2 = pmap(χ->wllrr(ℓ, ℓ-2, χ, R*χ, pk, n), χrange)
+	wlp2 = pmap(χ->wllrr(ℓ, ℓ+2, χ, R*χ, pk, n), χrange)
+	wlm4 = pmap(χ->wllrr(ℓ, ℓ-4, χ, R*χ, pk, n), χrange)
+	wlp4 = pmap(χ->wllrr(ℓ, ℓ+4, χ, R*χ, pk, n), χrange)
 	writedlm(fname, [χrange wl0 wlm2 wlp2 wlm4 wlp4])
 	println("Created '$fname'.")
 end
@@ -203,16 +204,16 @@ end
 
 # along ℓ
 function calc_wlχR(χ, R, elllist=[2:100,112,125,150,200,300,400,500,600,700,800,900,1000,1200])
-	calc_wldlχR(χ, R, elllist, "data/wldl_chi$(χ)_R$(R).tsv")
+	calc_wldlχR(χ, R, elllist, 0, "data/wldl_chi$(χ)_R$(R).tsv")
 	wldl_to_wljj("data/wldl_chi$(χ)_R$(R).tsv", "data/wljj_chi$(χ)_R$(R).tsv")
 end
 
 
 # along χ
 function calc_wlRℓ(R, ℓ, χrange=logspace(0, 5, 800))
-	calc_wldlRℓ(R, ℓ-2, χrange; fname="data/wldl_R$(R)_ell$(ℓ-2).tsv")
-	calc_wldlRℓ(R, ℓ,   χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
-	calc_wldlRℓ(R, ℓ+2, χrange; fname="data/wldl_R$(R)_ell$(ℓ+2).tsv")
+	calc_wldlRℓ(R, ℓ-2, 0, χrange; fname="data/wldl_R$(R)_ell$(ℓ-2).tsv")
+	calc_wldlRℓ(R, ℓ,   0, χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
+	calc_wldlRℓ(R, ℓ+2, 0, χrange; fname="data/wldl_R$(R)_ell$(ℓ+2).tsv")
 	χ = readdlm("data/wldl_R$(R)_ell$(ℓ).tsv")[:,1]
 	wll = Dict()
 	wll[-2,-2] = readdlm("data/wldl_R$(R)_ell$(ℓ-2).tsv")[:,2]
