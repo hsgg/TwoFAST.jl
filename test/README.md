@@ -40,7 +40,8 @@ we get some limited testing in the Δℓ direction.
 
 ### Along χ
 
-Gotta do this! Mostly a matter of copying stuff...
+Yep, working. Could always improve the `wllucasjl` program. It clearly has some
+flaws.
 
 
 ### More derivatives
