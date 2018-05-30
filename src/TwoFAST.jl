@@ -256,56 +256,6 @@ end
 
 
 ################### 2F1 functions #########################
-Power(a, b) = a^b
-function calc_f0_dl4(R, n; Rcrit=0.1)
-	if R < Rcrit
-		f000s4 = 1 + ((20 + 9*n + Power(n,2))*Power(R,2))/22. + 
-		((840 + 638*n + 179*Power(n,2) + 22*Power(n,3) + Power(n,4))*Power(R,4))/1144. + 
-		((60480 + 60216*n + 24574*Power(n,2) + 5265*Power(n,3) + 625*Power(n,4) + 
-		39*Power(n,5) + Power(n,6))*Power(R,6))/102960. + 
-		((6652800 + 7893840*n + 4028156*Power(n,2) + 1155420*Power(n,3) + 
-		203889*Power(n,4) + 22680*Power(n,5) + 1554*Power(n,6) + 60*Power(n,7) + 
-		Power(n,8))*Power(R,8))/1.400256e7 + 
-		((1037836800 + 1397759040*n + 832391136*Power(n,2) + 288843260*Power(n,3) + 
-		64720340*Power(n,4) + 9790725*Power(n,5) + 1013313*Power(n,6) + 
-		70890*Power(n,7) + 3210*Power(n,8) + 85*Power(n,9) + Power(n,10))*Power(R,10)
-		)/2.6604864e9 + ((217945728000 + 323626665600*n + 216374987520*Power(n,2) + 
-		86194186584*Power(n,3) + 22800117076*Power(n,4) + 4221785370*Power(n,5) + 
-		561447095*Power(n,6) + 54063702*Power(n,7) + 3743223*Power(n,8) + 
-		181830*Power(n,9) + 5885*Power(n,10) + 114*Power(n,11) + Power(n,12))*
-		Power(R,12))/6.704425728e1
-
-		f010s4 = 1 + ((4 + n)*(7 + n)*Power(R,2))/22. + 
-		((4 + n)*(6 + n)*(7 + n)*(9 + n)*Power(R,4))/1144. + 
-		((4 + n)*(6 + n)*(7 + n)*(8 + n)*(9 + n)*(11 + n)*Power(R,6))/102960. + 
-		((4 + n)*(6 + n)*(7 + n)*(8 + n)*(9 + n)*(10 + n)*(11 + n)*(13 + n)*Power(R,8))/
-		1.400256e7 + ((4 + n)*(6 + n)*(7 + n)*(8 + n)*(9 + n)*(10 + n)*(11 + n)*(12 + n)*
-		(13 + n)*(15 + n)*Power(R,10))/2.6604864e9 + 
-		((4 + n)*(6 + n)*(7 + n)*(8 + n)*(9 + n)*(10 + n)*(11 + n)*(12 + n)*(13 + n)*
-		(14 + n)*(15 + n)*(17 + n)*Power(R,12))/6.704425728e11
-
-		return [f000s4, f010s4]
-	end
-
-	f000fn4(m) = (945*(Power(1 + R,m)*(105 - 105*m*R + 45*(-2 + Power(m,2))*Power(R,2) + 
-		5*m*(11 - 2*Power(m,2))*Power(R,3) + 
-		(9 - 10*Power(m,2) + Power(m,4))*Power(R,4)) - 
-		Power(1 - R,m)*(105 + 105*m*R + 45*(-2 + Power(m,2))*Power(R,2) + 
-		5*m*(-11 + 2*Power(m,2))*Power(R,3) + 
-		(9 - 10*Power(m,2) + Power(m,4))*Power(R,4))))/
-		(2.*(-4 + m)*(-3 + m)*(-2 + m)*(-1 + m)*m*(1 + m)*(2 + m)*(3 + m)*(4 + m)*
-		Power(R,9))
-	f010fn4(n) = (-945*Power(1 + R,n)*(-105 + R*(75*R + 
-		n*(105 - 45*n*R + 10*(-4 + Power(n,2))*Power(R,2) - 
-		n*(-4 + Power(n,2))*Power(R,3) + (-4 + Power(n,2))*Power(R,4)))) - 
-		945*Power(1 - R,n)*(105 + R*(-75*R + 
-		n*(105 + 45*n*R + 10*(-4 + Power(n,2))*Power(R,2) + 
-		n*(-4 + Power(n,2))*Power(R,3) + (-4 + Power(n,2))*Power(R,4)))))/
-		(2.*(-5 + n)*(-3 + n)*(-2 + n)*(-1 + n)*n*(1 + n)*(2 + n)*(3 + n)*(5 + n)*
-		Power(R,9)*Power(1 - Power(R,2),n))
-	return [f000fn4(1-n), f010fn4(n)]
-end
-
 # Use Miller's algorithm
 function calc_f000_fm1m1m2_ell0_dl0m1{T}(R::T, n::Complex{T}, dl::Integer)
 	if dl == 0
@@ -326,7 +276,7 @@ function calc_f000_fm1m1m2_ell0_dl0m1{T}(R::T, n::Complex{T}, dl::Integer)
 end
 
 function BCDEfn_dl{T}(R::T, n::Complex{T}, dl::Integer)
-	# Our implementation of Miller's alg gives us where we wnat to go, not
+	# Our implementation of Miller's alg gives us where we want to go, not
 	# where we start:
 	dl = dl + 2
 	ell = 0
@@ -363,26 +313,12 @@ end
 
 
 function calc_f0{T}(R::T, n::Complex{T}, dl::Integer; use_arb=false)
-	fn = calc_f000_f0m10_ell0(R, n, dl)
-	return fn
-	println("fn: $fn")
-	if n + dl == 0 && !use_arb
+	if n + dl == 0
 		return [Complex{T}(1), Complex{T}(1)]
 	end
-	if dl == 0 && !use_arb
-		f000fn(s) = ((1+R)^s - (1-R)^s) / (2 * R * s)
-		f010fn(s) = ((s+R) * (1+R)^-s - (s-R) * (1-R)^-s) / (2 * (1-s) * (1+s) * R)
-		f = [f000fn(1-n), f010fn(n)]
-		println("f0: $f")
-		return f
-	elseif dl == 4 && !use_arb
-		f = Array{Complex128}(calc_f0_dl4(BigFloat(R), Complex{BigFloat}(n);
-			Rcrit=0))
-		println("f4: $f")
-		return f
-	else
-		error("dl=$dl not implemented, R=$R, n=$n")
-	end
+	fn = calc_f000_f0m10_ell0(R, n, dl)
+	#println("fn: $fn")
+	return fn
 end
 
 
