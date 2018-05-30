@@ -214,6 +214,34 @@ function plot_cl(R=1.0, xmax=1200, y2max=1.5e-6)
     #savefig("wl22_R$R.pdf")
 end
 
+
+# along χ′
+function plot_cl_χ′(dχ′, ℓ=42)
+    println("plot_cl(dχ′=$dχ′, ℓ=$ℓ)...")
+
+    χ′, w00, w02, w20, w22 = calc_wlrr_χ2303_χ′(dχ′, ℓ)
+    writedlm("wljj_chichi_ell42.tsv", [χ′ w00 w02 w20 w22])
+    χ′ = readdlm("wljj_chichi_ell42.tsv")[:,1]
+    w00 = readdlm("wljj_chichi_ell42.tsv")[:,2]
+    w02 = readdlm("wljj_chichi_ell42.tsv")[:,3]
+    w20 = readdlm("wljj_chichi_ell42.tsv")[:,4]
+    w22 = readdlm("wljj_chichi_ell42.tsv")[:,5]
+
+    figure()
+    plot(χ′, w00, label=L"(j,j')=(0,0)", ls="--")
+    plot(χ′, w02, label=L"(j,j')=(0,2)", ls="--")
+    plot(χ′, w20, label=L"(j,j')=(2,0)", ls="--")
+    plot(χ′, w22, label=L"(j,j')=(2,2)", ls="--")
+    xlabel(L"\chi'")
+    ylabel(L"$w_{\ell,jj'}$")
+    ticklabel_format(styl="sci", scilimits=(-1,4))
+    legend(loc="upper right")
+
+    tight_layout()
+    #savefig("wl22_R$R.pdf")
+end
+
+
 # along χ
 function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6)
     println("plot_cl_χ(ℓ=$ℓ, jjidx=$jjidx)...")
@@ -286,22 +314,24 @@ close("all")
 #GraphicTests.plot_xi_rdiff(4)
 #GraphicTests.plot_xi_derivs()
 
-GraphicTests.plot_cl(1.0)
-GraphicTests.plot_cl(1.1)
-GraphicTests.plot_cl(0.9)
-GraphicTests.plot_cl(0.8)
-GraphicTests.plot_cl(0.7)
-GraphicTests.plot_cl(0.6)
-GraphicTests.plot_cl(0.5)
-GraphicTests.plot_cl(0.4)
-GraphicTests.plot_cl(0.3)
-GraphicTests.plot_cl(0.2)
-GraphicTests.plot_cl(0.1)
+#GraphicTests.plot_cl(1.0)
+#GraphicTests.plot_cl(1.1)
+#GraphicTests.plot_cl(0.9)
+#GraphicTests.plot_cl(0.8)
+#GraphicTests.plot_cl(0.7)
+#GraphicTests.plot_cl(0.6)
+#GraphicTests.plot_cl(0.5)
+#GraphicTests.plot_cl(0.4)
+#GraphicTests.plot_cl(0.3)
+#GraphicTests.plot_cl(0.2)
+#GraphicTests.plot_cl(0.1)
 
-GraphicTests.plot_cl_χ(42, 1)
-GraphicTests.plot_cl_χ(42, 2)
-GraphicTests.plot_cl_χ(42, 3)
-GraphicTests.plot_cl_χ(42, 4)
+GraphicTests.plot_cl_χ′(0.1, 42)
+
+#GraphicTests.plot_cl_χ(42, 1)
+#GraphicTests.plot_cl_χ(42, 2)
+#GraphicTests.plot_cl_χ(42, 3)
+#GraphicTests.plot_cl_χ(42, 4)
 
 show()
 

@@ -7,6 +7,7 @@ export get_quadosc_xi
 export calc_2fast_xi
 export calc_xiderivs
 export calc_wlrr_χ2303
+export calc_wlrr_χ2303_χ′
 export calc_wlrr_ℓR
 
 using TwoFAST
@@ -83,6 +84,26 @@ function calc_wlrr_χ2303(R, ell)
     w20 = w20[n,1,:]
     w22 = w22[n,1,:]
     return w00, w02, w20, w22
+end
+
+
+function calc_wlrr_χ2303_χ′(dχ′=0.1, ℓ=42)
+    χ = 2303.0
+    χ′ = unique(sort(vcat(2303.0:-dχ′:2300, 2303.0:dχ′:2306)))
+    @show χ′
+    N = 1600
+    kmin = 1e-5
+    kmax = 1e5
+    G = log(kmax / kmin)
+    chi0 = χ / exp(G / 2)
+    n = div(N,2) + 1
+    RR = χ′ / χ
+    rr, w00, w02, w20, w22 = wlrr(RR, [ℓ]; N=N, chi0=chi0, kmin=kmin, kmax=kmax)
+    w00 = w00[n,:,1]
+    w02 = w02[n,:,1]
+    w20 = w20[n,:,1]
+    w22 = w22[n,:,1]
+    return χ′, w00, w02, w20, w22
 end
 
 
