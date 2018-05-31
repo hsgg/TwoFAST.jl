@@ -94,12 +94,13 @@ function test_wl_χ2303_R(R, atol)
 
     w00, w02, w20, w22 = calc_wlrr_χ2303(R, ell)
 
-    println("Testing R=$R...")
+    print("Testing R=$R ... ")
     @test all(isapprox.(w00, luc00, atol=atol))
     @test all(isapprox.(w02, luc02, atol=atol))
     @test all(isapprox.(w20, luc20, atol=atol))
     @test w22[1] ≈ luc22[1] atol=5e-10
     @test all(isapprox.(w22[2:end], luc22[2:end], atol=atol))
+    println("passed")
 end
 
 function test_wl_ℓRR(ℓ)
