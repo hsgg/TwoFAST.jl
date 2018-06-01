@@ -1302,7 +1302,7 @@ function calcMll(RR;
 	@assert length(mm) == N2
 	@assert all(RRcache .== RR)
 	RRnorm = deepcopy(RR)
-	RRnorm[RR.>1] = 1./RR[RR.>1]
+	RRnorm[RR.>1] = 1 ./ RR[RR.>1]
 
 	# backward recursion
 	tstep = @timed nothing
@@ -1438,7 +1438,7 @@ function calcMljj(RR;
 	@assert length(mm) == N2
 	@assert all(RRcache .== RR)
 	RRnorm = deepcopy(RR)
-	RRnorm[RR.>1] = 1./RR[RR.>1]
+	RRnorm[RR.>1] = 1 ./ RR[RR.>1]
         println("fell[1,1] = ", fell[1,1])
 
 	# backward recursion
