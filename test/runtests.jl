@@ -74,14 +74,6 @@ function test_xi_derivs()
 end
 
 
-function test_xi()
-    for ℓ=0:4
-        test_xiln(ℓ)
-    end
-    test_xi_derivs()
-end
-
-
 ##################### test wljj ##############################
 
 function test_wl_χ2303_R(R, atol)
@@ -149,26 +141,28 @@ function test_wl_ℓRR(ℓ)
 end
 
 
-function test_wl()
-    test_wl_χ2303_R(1.1, 1e-11)
-    test_wl_χ2303_R(1.0, 2e-10)
-    test_wl_χ2303_R(0.9, 1e-11)
-    test_wl_χ2303_R(0.8, 1e-12)
-    test_wl_χ2303_R(0.7, 1e-11)
-    test_wl_χ2303_R(0.6, 1e-11)
-    test_wl_χ2303_R(0.5, 2e-11)
-    test_wl_χ2303_R(0.4, 1e-11)
-    test_wl_χ2303_R(0.3, 1e-11)
-    test_wl_χ2303_R(0.2, 1e-11)
-    test_wl_χ2303_R(0.1, 1e-11)
-    test_wl_ℓRR(42)
-end
-
 end # module
 
 
-TestTwoFAST.test_xi()
-TestTwoFAST.test_wl()
+TestTwoFAST.test_xiln(0)
+TestTwoFAST.test_xiln(1)
+TestTwoFAST.test_xiln(2)
+TestTwoFAST.test_xiln(3)
+TestTwoFAST.test_xiln(4)
+TestTwoFAST.test_xi_derivs()
+
+TestTwoFAST.test_wl_χ2303_R(1.1, 1e-11)
+TestTwoFAST.test_wl_χ2303_R(1.0, 2e-10)
+TestTwoFAST.test_wl_χ2303_R(0.9, 1e-11)
+TestTwoFAST.test_wl_χ2303_R(0.8, 1e-12)
+TestTwoFAST.test_wl_χ2303_R(0.7, 1e-11)
+TestTwoFAST.test_wl_χ2303_R(0.6, 1e-11)
+TestTwoFAST.test_wl_χ2303_R(0.5, 2e-11)
+TestTwoFAST.test_wl_χ2303_R(0.4, 1e-11)
+TestTwoFAST.test_wl_χ2303_R(0.3, 1e-11)
+TestTwoFAST.test_wl_χ2303_R(0.2, 1e-11)
+TestTwoFAST.test_wl_χ2303_R(0.1, 1e-11)
+TestTwoFAST.test_wl_ℓRR(42)
 
 
 # vim: set sw=4 et sts=4 :
