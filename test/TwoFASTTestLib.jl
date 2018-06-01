@@ -11,7 +11,8 @@ export calc_wlrr_χ2303_χ′
 export calc_wlrr_ℓR
 
 using TwoFAST
-using PkSpectra
+using ...PkSpectra
+using Compat.DelimitedFiles
 
 
 ##################### ξ(r) tests ##########################
@@ -51,10 +52,10 @@ function wlrr(RR=[0.6, 0.7, 0.8, 0.9, 1.0], ell=[42]; prefix="out", N=4096,
                   outfile="$prefix/Ml21-cache.bin")
 
     # calculate wljj:
-    w00 = Array{Float64}(N, length(RR), length(ell))
-    w02 = Array{Float64}(N, length(RR), length(ell))
-    w20 = Array{Float64}(N, length(RR), length(ell))
-    w22 = Array{Float64}(N, length(RR), length(ell))
+    w00 = fill(NaN, N, length(RR), length(ell))
+    w02 = fill(NaN, N, length(RR), length(ell))
+    w20 = fill(NaN, N, length(RR), length(ell))
+    w22 = fill(NaN, N, length(RR), length(ell))
     il = length(ell)
     function outfunc(wjj, ell, rr, RR)
         w00[:,:,il] = wjj[1]

@@ -3,6 +3,9 @@ module Miller
 export miller
 
 
+using Compat
+using Compat.LinearAlgebra
+
 import Base.realmin
 realmin(arr) = realmin(typeof(real(arr[1])))
 
@@ -107,7 +110,7 @@ end
 function calc_Amn_back(nbegin, nend, BCfn)
     @assert nbegin >= nend
     T = Complex{Float64}
-    A = eye(T, 2)
+    A = Matrix{T}(I, 2, 2)
     for n=nbegin-1:-1:nend
         B, C, D, E = BCfn(n)
         #An = [[B  C]; [D  E]]
@@ -132,7 +135,7 @@ function scale_seed!(fmatch, A, fseed)
 end
 
 
-function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
+function calc_fseed(nseed, BCfn, f0::T, fasymp::T) where T
     A = calc_Amn_back(nseed, 0, BCfn)
     #println("===> A: $A")
 
@@ -159,8 +162,8 @@ function calc_fseed{T}(nseed, BCfn, f0::T, fasymp::T)
 end
 
 
-function calc_fmax_fn{T}(nmax, BCfn, f0::T, fasymp::T, ndiffmin, nminseed;
-                      fmax_tol=1e-10, imax=100, growth=:exponential, expfac=1.2)
+function calc_fmax_fn(nmax, BCfn, f0::T, fasymp::T, ndiffmin, nminseed;
+                      fmax_tol=1e-10, imax=100, growth=:exponential, expfac=1.2) where T
     fmax = deepcopy(fasymp)
     rdiff = 1.0
     nseed = max(nmax, nminseed)
@@ -204,7 +207,7 @@ function calc_underflow_fmax(nmax, calc_f)
     nmin = 0
     nmid = div(nmin + nmax, 2)
     # ensure we pass on the error when we find no solution:
-    fmax = Array{Complex128}([NaN, NaN])
+    fmax = Array{ComplexF64}([NaN, NaN])
     while nmid != nmin && nmid != nmax
         #println("==>$nmid:")
         fnew = calc_f(nmid)
@@ -224,14 +227,14 @@ function calc_underflow_fmax(nmax, calc_f)
         warn("fmax = $fmax")
         warn("abs(fmax) = $(abs.(fmax))")
         warn("Assumption may be violated: Result is not close to zero")
-        return Array{Complex128}([NaN, NaN]), nmin
+        return Array{ComplexF64}([NaN, NaN]), nmin
     end
     return fmax, nmin
 end
 
 
-function miller{T}(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
-                    calc_fmax=calc_fmax_fn, fmax_tol=1e-10)
+function miller(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
+                calc_fmax=calc_fmax_fn, fmax_tol=1e-10) where T
     # try fast linear growth
     #println("trying fast linear growth:")
     #=

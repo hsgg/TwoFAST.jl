@@ -13,8 +13,9 @@ else
     using Test
 end
 using Dierckx
-using PkSpectra
-using TwoFASTTestLib
+using ...PkSpectra
+using ...TwoFASTTestLib
+using Compat.DelimitedFiles
 
 
 ############### test xicalc #######################

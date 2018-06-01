@@ -1,6 +1,3 @@
-include("./PerformanceStats.jl")
-include("./Miller.jl")
-
 module TwoFAST
 
 export xicalc
@@ -10,12 +7,17 @@ export calcwljj
 
 
 # from this package
-using PerformanceStats
-using Miller
+include("PerformanceStats.jl")
+include("Miller.jl")
+using .PerformanceStats
+using .Miller
 
 # other packages
+using FFTW
 using FITSIO
 using IncGammaBeta
+using Compat
+using Compat.LinearAlgebra
 #using SphBes
 
 
@@ -87,10 +89,10 @@ end
 ######################## xicalc() ############################
 
 function make_Mellnu(tt, alpha, ell, nu; q=0)
-	n = q - nu - 1 - im*tt
+	n = @. q - nu - 1 - im*tt
 	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(lgamma((1 + ell + n) / 2)
 		- lgamma((2 + ell - n) / 2))
-	A = alpha.^(im*tt - q + nu)
+	A = @. alpha^(im*tt - q + nu)
 	#println("n: $(n[1])")
 	#println("intjlttn: $(intjlttn[1])")
 	#println("A: $(A[1])")
@@ -118,9 +120,9 @@ function calc_qbest(ell, nu; n1=0.9, n2=0.9999)
 end
 
 
-function xicalc{T,Tq}(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000,
+function xicalc(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000,
 		q::Tq=:auto, winx=windowfn, wink=windowfn,
-	)
+		) where {T,Tq}
 	if T <: Tuple
 		kmin = minimum(pkfn[1])
 		kmax = maximum(pkfn[1]) * pkfn[1][2] / pkfn[1][1]
@@ -183,15 +185,15 @@ function wljj_from_wldl!(wtRdllm2::Array{Complex{Float64},3},
 	f2 = -(2L^2 + 2L - 1) / ((2L - 1) * (2L + 3))
 	f3 = (L + 1) * (L + 2) / ((2L + 1) * (2L + 3))
 
-	const m2m2 = 3
-	const m2e0 = 4
-	const m2p2 = 5
-	const e0m2 = 2
-	const e0e0 = 3
-	const e0p2 = 4
-	const p2m2 = 1
-	const p2e0 = 2
-	const p2p2 = 3
+	m2m2 = 3
+	m2e0 = 4
+	m2p2 = 5
+	e0m2 = 2
+	e0e0 = 3
+	e0p2 = 4
+	p2m2 = 1
+	p2e0 = 2
+	p2p2 = 3
 
 	muladdset_a_b!(wjj, 1, 1, wtRdll0, e0e0)
 
@@ -257,7 +259,7 @@ end
 
 ################### 2F1 functions #########################
 # Use Miller's algorithm
-function calc_f000_fm1m1m2_ell0_dl0m1{T}(R::T, n::Complex{T}, dl::Integer)
+function calc_f000_fm1m1m2_ell0_dl0m1(R::T, n::Complex{T}, dl::Integer) where T
 	if dl == 0
 		f000fna(m) = 1/(2m*R) * ((1+R)^m - (1-R)^m)
 		fm1m1m2fna(m) = 1/2 * ((1 - m*R)*(1+R)^m + (1 + m*R)*(1-R)^m)
@@ -275,7 +277,7 @@ function calc_f000_fm1m1m2_ell0_dl0m1{T}(R::T, n::Complex{T}, dl::Integer)
 	return [fm1m1m2, f000]
 end
 
-function BCDEfn_dl{T}(R::T, n::Complex{T}, dl::Integer)
+function BCDEfn_dl(R::T, n::Complex{T}, dl::Integer) where T
 	# Our implementation of Miller's alg gives us where we want to go, not
 	# where we start:
 	dl = dl + 2
@@ -291,7 +293,7 @@ function BCDEfn_dl{T}(R::T, n::Complex{T}, dl::Integer)
 	return B, C, D, E
 end
 
-function calc_f000_f0m10_ell0{T}(R::T, n::Complex{T}, dl::Integer)
+function calc_f000_f0m10_ell0(R::T, n::Complex{T}, dl::Integer) where T
 	f0 = calc_f000_fm1m1m2_ell0_dl0m1(R, n, isodd(dl) ? -1 : 0)
 	z = R^2
 	fasymp = [Complex{T}((1-z/2)/2 + sqrt(1-z)/2), Complex{T}(1)]
@@ -314,7 +316,7 @@ function calc_f000_f0m10_ell0{T}(R::T, n::Complex{T}, dl::Integer)
 end
 
 
-function calc_f0{T}(R::T, n::Complex{T}, dl::Integer; use_arb=false)
+function calc_f0(R::T, n::Complex{T}, dl::Integer; use_arb=false) where T
 	if n + dl == 0
 		return [Complex{T}(1), Complex{T}(1)]
 	end
@@ -324,7 +326,7 @@ function calc_f0{T}(R::T, n::Complex{T}, dl::Integer; use_arb=false)
 end
 
 
-function calc_Mll_unity{T}(ell, n::Complex{T}, dl, alpha)
+function calc_Mll_unity(ell, n::Complex{T}, dl, alpha) where T
 	if n + dl == 0
 		return [Complex{T}(1), Complex{T}(1)]
 	end
@@ -372,8 +374,8 @@ function BCDEfn(ell, dl, a, R)
 end
 
 
-function calc_2f1_RqmG{T}(ell, R::T, dl::Integer; q=1.0, m::Int=500,
-			      G=log(1e4/1e-4), alpha=1e-4)
+function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
+		       G=log(1e4/1e-4), alpha=1e-4) where T
 	t = 2 * T(pi) * m / G
 	n = q - 1 - im * t
 	a = n / 2 + dl / 2
@@ -556,7 +558,7 @@ end
 
 ############## Mellell utilities #############################
 
-function Mellell_pre{T}(ell1, ell2, R::T, n, alpha::T)
+function Mellell_pre(ell1, ell2, R::T, n, alpha::T) where T
 	#a = (ell2 - ell1 + n) / 2
 	b = (1 + ell1 + ell2 + n) / 2
 	c = ell2 + T(3) / 2
@@ -606,13 +608,13 @@ end
 
 
 ########################## dl ± 2 recursions ###################
-t0 = @timed nothing
-tm2 = @timed nothing
-tm2s = @timed nothing
-tm4 = @timed nothing
-tp2 = @timed nothing
-tp2s = @timed nothing
-tp4 = @timed nothing
+t0 = @timed Nothing
+tm2 = @timed Nothing
+tm2s = @timed Nothing
+tm4 = @timed Nothing
+tp2 = @timed Nothing
+tp2s = @timed Nothing
+tp4 = @timed Nothing
 
 function copy_ixy_i!(D, j, k, S)
 	@assert size(D,1) == length(S)
@@ -1069,7 +1071,7 @@ end
 ########################## utilities ##################################
 
 function calc_ellenlarged(ell, jmax)
-	ellenlarged = Array{Int}((2jmax + 1) * length(ell))
+	ellenlarged = Array{Int}(undef, (2jmax + 1) * length(ell))
 	ll = 1
 	for i=1:length(ell)
 		for j=-jmax:jmax
@@ -1088,8 +1090,8 @@ end
 ##################### fell_lmax cache ###########################
 
 function calc_fell_lmax(ellmax::Integer, mm, RR, q, G, alpha, dlrec::Integer, dlrecRg1::Integer)
-	fell = Array{Complex{Float64}}(2, length(mm), length(RR))
-	lmax = Array{Int64}(length(mm), length(RR))
+	fell = Array{Complex{Float64}}(undef, 2, length(mm), length(RR))
+	lmax = Array{Int64}(undef, length(mm), length(RR))
 	for j=1:length(RR)
 		R = RR[j]
 		print("  R=$R:\t")
@@ -1135,7 +1137,7 @@ function read_fell_lmax(fname="fell_lmax_v23.fits")
 	imf010 = read(f["ImF010"])
 	RR = read(f["ratio"], "R")
 	mm = read(f["mode"], "m")
-	fell = Array{Complex{Float64}}(2, size(lmax)...)
+	fell = Array{Complex{Float64}}(undef, 2, size(lmax)...)
 	fell[1,:,:] = ref000 + im*imf000
 	fell[2,:,:] = ref010 + im*imf010
 	close(f)
@@ -1148,7 +1150,7 @@ end
 
 const magic_number = 0x782aa138291e1800
 function write_Mlcache_header(fname, Mell, RR, ell)
-	@assert typeof(Mell) == Array{Complex128,3}
+	@assert typeof(Mell) == Array{ComplexF64,3}
 	f = open(fname, "w")
 	write(f, Int64(magic_number))
 	write(f, Int64(size(Mell,1)))
@@ -1162,11 +1164,11 @@ end
 
 function read_Mlcache_header(fname="Ml21-cache.bin")
 	f = open(fname, "r")
-	magic, lenmm, lenRR, lenjj, lenell = read(f, Int64, 5)
+	magic, lenmm, lenRR, lenjj, lenell = read!(f, Array{Int64}(undef, 5))
 	@assert magic == magic_number
 	Mlsize = [lenmm, lenRR, lenjj]
-	ell = read(f, Int64, lenell)
-	RR = read(f, Float64, lenRR)
+	ell = read!(f, Array{Int64}(undef, lenell))
+	RR = read!(f, Array{Float64}(undef, lenRR))
 	return f, Mlsize, ell, RR
 end
 
@@ -1273,17 +1275,17 @@ function calcMll(RR;
 	tt = 2pi * mm / G
 	Am0 = (q - 1) / 2 - im * tt / 2
 
-	Melleven = Array{Complex{Float64}}(length(mm), length(RR))
-	Mellbp1even = Array{Complex{Float64}}(length(mm), length(RR))
-	Mellodd = Array{Complex{Float64}}(length(mm), length(RR))
-	Mellbp1odd = Array{Complex{Float64}}(length(mm), length(RR))
+	Melleven = Array{Complex{Float64}}(undef, length(mm), length(RR))
+	Mellbp1even = Array{Complex{Float64}}(undef, length(mm), length(RR))
+	Mellodd = Array{Complex{Float64}}(undef, length(mm), length(RR))
+	Mellbp1odd = Array{Complex{Float64}}(undef, length(mm), length(RR))
 
 	ndl = div(dlmax - dlmin, 2) + 1
-	work1 = Array{Complex{Float64}}(size(Mell,1))
-	work2 = Array{Complex{Float64}}(size(Mell,1))
-	wtRdlleven = Array{Complex{Float64}}(length(mm), length(RR), ndl)  # tt, RR, dl
-	wtRdllodd = Array{Complex{Float64}}(length(mm), length(RR), ndl)  # tt, RR, dl
-	wtRdll = Array{Complex{Float64}}(length(mm), length(RR), dlmax - dlmin + 1)  # tt, RR, jj'
+	work1 = Array{Complex{Float64}}(undef, size(Mell,1))
+	work2 = Array{Complex{Float64}}(undef, size(Mell,1))
+	wtRdlleven = Array{Complex{Float64}}(undef, length(mm), length(RR), ndl)  # tt, RR, dl
+	wtRdllodd = Array{Complex{Float64}}(undef, length(mm), length(RR), ndl)  # tt, RR, dl
+	wtRdll = Array{Complex{Float64}}(undef, length(mm), length(RR), dlmax - dlmin + 1)  # tt, RR, jj'
 
 	Mellsize = length(mm) * length(RR) * 4 * length(ell) * sizeof(Complex{TMell}(1))
 	println("Output size: $(Mellsize) bytes = $(Mellsize/2^30) GiB")
@@ -1305,22 +1307,22 @@ function calcMll(RR;
 	RRnorm[RR.>1] = 1 ./ RR[RR.>1]
 
 	# backward recursion
-	tstep = @timed nothing
-	tswapping = @timed nothing
-	tcalcMl = @timed nothing
-	tcalcwl = @timed nothing
-	tcalcwljj = @timed nothing
-	tcalcprefac = @timed nothing
-	tout = @timed nothing
-	twrite = @timed nothing
-	ttest = @timed nothing
-	global t0 = @timed nothing
-	global tm2 = @timed nothing
-	global tm2s = @timed nothing
-	global tm4 = @timed nothing
-	global tp2 = @timed nothing
-	global tp2s = @timed nothing
-	global tp4 = @timed nothing
+	tstep = @timed Nothing
+	tswapping = @timed Nothing
+	tcalcMl = @timed Nothing
+	tcalcwl = @timed Nothing
+	tcalcwljj = @timed Nothing
+	tcalcprefac = @timed Nothing
+	tout = @timed Nothing
+	twrite = @timed Nothing
+	ttest = @timed Nothing
+	global t0 = @timed Nothing
+	global tm2 = @timed Nothing
+	global tm2s = @timed Nothing
+	global tm4 = @timed Nothing
+	global tp2 = @timed Nothing
+	global tp2s = @timed Nothing
+	global tp4 = @timed Nothing
 	ll = length(ell)
 	tic()
 	@time for ellnow in ellmax:-1:minimum(ell)
@@ -1410,19 +1412,19 @@ function calcMljj(RR;
 
 	mm = 0:N2-1
 	tt = 2pi * mm / G
-	Am0 = (q - 1) / 2 - im * tt / 2
+	Am0 = @. (q - 1) / 2 - im * tt / 2
 
-	Mell = Array{Complex{Float64}}(length(mm), length(RR))
-	Mellbp1 = Array{Complex{Float64}}(length(mm), length(RR))
+	Mell = Array{Complex{Float64}}(undef, length(mm), length(RR))
+	Mellbp1 = Array{Complex{Float64}}(undef, length(mm), length(RR))
 
 	ndl = div(dlmax - dlmin, 2) + 1
-	work1 = Array{Complex{Float64}}(size(Mell,1))
-	work2 = Array{Complex{Float64}}(size(Mell,1))
+	work1 = Array{Complex{Float64}}(undef, size(Mell,1))
+	work2 = Array{Complex{Float64}}(undef, size(Mell,1))
 	wtRdll = Dict{Int,Array{Complex{Float64},3}}()
 	for i=-jmax:jmax
-		wtRdll[i] = Array{Complex{Float64}}(length(mm), length(RR), ndl)  # tt, RR, dl
+		wtRdll[i] = Array{Complex{Float64}}(undef, length(mm), length(RR), ndl)  # tt, RR, dl
 	end
-	wjj = Array{Complex{Float64}}(length(mm), length(RR), 4)  # tt, RR, jj'
+	wjj = Array{Complex{Float64}}(undef, length(mm), length(RR), 4)  # tt, RR, jj'
 
 	Mellsize = length(mm) * length(RR) * 4 * length(ell) * sizeof(Complex{TMell}(1))
 	println("Output size: $(Mellsize) bytes = $(Mellsize/2^30) GiB")
@@ -1442,22 +1444,22 @@ function calcMljj(RR;
         println("fell[1,1] = ", fell[1,1])
 
 	# backward recursion
-	tstep = @timed nothing
-	tswapping = @timed nothing
-	tcalcMl = @timed nothing
-	tcalcwl = @timed nothing
-	tcalcwljj = @timed nothing
-	tcalcprefac = @timed nothing
-	tout = @timed nothing
-	twrite = @timed nothing
-	ttest = @timed nothing
-	global t0 = @timed nothing
-	global tm2 = @timed nothing
-	global tm2s = @timed nothing
-	global tm4 = @timed nothing
-	global tp2 = @timed nothing
-	global tp2s = @timed nothing
-	global tp4 = @timed nothing
+	tstep = @timed Nothing
+	tswapping = @timed Nothing
+	tcalcMl = @timed Nothing
+	tcalcwl = @timed Nothing
+	tcalcwljj = @timed Nothing
+	tcalcprefac = @timed Nothing
+	tout = @timed Nothing
+	twrite = @timed Nothing
+	ttest = @timed Nothing
+	global t0 = @timed Nothing
+	global tm2 = @timed Nothing
+	global tm2s = @timed Nothing
+	global tm4 = @timed Nothing
+	global tp2 = @timed Nothing
+	global tp2s = @timed Nothing
+	global tp4 = @timed Nothing
 	ll = length(ell)
 	llen = length(ellenlarged)
 	tic()
@@ -1524,7 +1526,7 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 		winx=windowfn, wink=windowfn,
 		fftw_flags=FFTW.MEASURE, fftw_timelimit=Inf,
 		cachefile="Ml21-cache.bin",
-		outfunc=(a,b,c,d)->nothing,
+		outfunc=(a,b,c,d)->Nothing,
 	)
 	if maximum(ridxs) > N
 		ridxs = minimum(ridxs):N
@@ -1534,30 +1536,30 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 	k0 = kmin
 	G = log(kmax / kmin)
 	L = 2 * pi * N / G
-	rr = r0 * exp.((ridxs-1) * (G / N))
+	rr = @. r0 * exp((ridxs-1) * (G / N))
 
 	if maximum(ell) < 0  # this is our code that we are only interested in 'rr'
 		return rr
 	end
 
-	prefac = (4 * k0^3 / G) * (rr / r0).^(-q)
-	@time brfft_plan = plan_brfft(Array{Complex{Float64}}(N2), N;
+	prefac = @. (4 * k0^3 / G) * (rr / r0)^(-q)
+	@time brfft_plan = plan_brfft(Array{Complex{Float64}}(undef, N2), N;
 		flags=fftw_flags, timelimit=fftw_timelimit)
 	print("make_phi(): ")
 	@time phi = make_phi(pkfn, k0, N, L, q, winx, wink)
 
-	wt00 = Array{Complex{Float64}}(N2, length(RR))
-	wt02 = Array{Complex{Float64}}(N2, length(RR))
-	wt20 = Array{Complex{Float64}}(N2, length(RR))
-	wt22 = Array{Complex{Float64}}(N2, length(RR))
-	wr00 = Array{Float64}(N, length(RR))
-	wr02 = Array{Float64}(N, length(RR))
-	wr20 = Array{Float64}(N, length(RR))
-	wr22 = Array{Float64}(N, length(RR))
-	w00 = Array{Float64}(Nrr, length(RR))
-	w02 = Array{Float64}(Nrr, length(RR))
-	w20 = Array{Float64}(Nrr, length(RR))
-	w22 = Array{Float64}(Nrr, length(RR))
+	wt00 = Array{Complex{Float64}}(undef, N2, length(RR))
+	wt02 = Array{Complex{Float64}}(undef, N2, length(RR))
+	wt20 = Array{Complex{Float64}}(undef, N2, length(RR))
+	wt22 = Array{Complex{Float64}}(undef, N2, length(RR))
+	wr00 = Array{Float64}(undef, N, length(RR))
+	wr02 = Array{Float64}(undef, N, length(RR))
+	wr20 = Array{Float64}(undef, N, length(RR))
+	wr22 = Array{Float64}(undef, N, length(RR))
+	w00 = Array{Float64}(undef, Nrr, length(RR))
+	w02 = Array{Float64}(undef, Nrr, length(RR))
+	w20 = Array{Float64}(undef, Nrr, length(RR))
+	w22 = Array{Float64}(undef, Nrr, length(RR))
 
 	tread = @timed f, Mlsize, ellcache, RRcache = read_Mlcache_header(cachefile)
 	@assert Mlsize[1] == size(wt00,1)
@@ -1568,11 +1570,11 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 	#@assert all(ellcache .== ell)
 	@assert all(RRcache .== RR)
 	lenRR = length(RR)
-	toutfunc = @timed nothing
+	toutfunc = @timed Nothing
 
-	tmultphi = @timed nothing
-	tbrfft = @timed nothing
-	tmultprefac = @timed nothing
+	tmultphi = @timed Nothing
+	tbrfft = @timed Nothing
+	tmultprefac = @timed Nothing
 
 	@time for ll in ellcache
 		#tic()

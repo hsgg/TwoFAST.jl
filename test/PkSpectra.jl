@@ -6,6 +6,7 @@ export PkSpectrum
 
 
 using Dierckx  # same as used in the TwoFAST tests
+using Compat.DelimitedFiles
 
 
 struct PkSpectrum
@@ -22,8 +23,8 @@ end
 
 
 function PkSpectrum(filename="data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
-	kk = readdlm(filename)[:,1]
-	pk = readdlm(filename)[:,2]
+	kk = readdlm(filename, comments=true)[:,1]
+	pk = readdlm(filename, comments=true)[:,2]
 	pkspl = Spline1D(kk, pk)
 
 	# fit low-k using derivative
