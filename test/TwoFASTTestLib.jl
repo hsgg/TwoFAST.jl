@@ -43,12 +43,12 @@ function wlrr(RR=[0.6, 0.7, 0.8, 0.9, 1.0], ell=[42]; prefix="out", N=4096,
     q = 1.1
 
     # calculate M_ll at high ell, result gets saved to a file:
-    make_fell_lmax_cache(RR, maximum(ell), "$prefix/fell_lmax_v23.fits";
+    make_fell_lmax_cache(RR, maximum(ell), "$prefix/F21EllCache";
                          N=N, q=q, G=log(kmax / kmin), k0=kmin, r0=chi0)
 
     # calculate all M_ll, result gets saved to a file:
     tt = calcMljj(RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q,
-                  fell_lmax_file="$prefix/fell_lmax_v23.fits",
+                  fell_lmax_file="$prefix/F21EllCache",
                   outfile="$prefix/Ml21-cache.bin")
 
     # calculate wljj:
