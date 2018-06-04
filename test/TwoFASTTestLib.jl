@@ -109,7 +109,7 @@ end
 
 
 function calc_wlrr_ℓR(ℓ, RR)
-    N = round(Int, 800 / 5 * 8)
+    N = 1280  # = round(Int, 800 / 5 * 8)
     expG = 1e5^(1280 / (800 - 1))
     chi0 = expG^(-3/8)
     kmax = 1e3

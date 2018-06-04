@@ -1,7 +1,7 @@
 module TwoFAST
 
 export xicalc
-export make_fell_lmax_cache
+export F21EllCache, make_fell_lmax_cache
 export calcMljj
 export calcwljj
 
@@ -14,11 +14,12 @@ using .Miller
 
 # other packages
 using FFTW
-using FITSIO
 using IncGammaBeta
 using Compat
 using Compat.LinearAlgebra
 #using SphBes
+
+import Base.write
 
 
 ###################### muladd variants ##############################
@@ -1087,62 +1088,138 @@ function calc_ellenlarged(ell, jmax)
 end
 
 
+# function to read "name = value" pairs from a file, and convert it to the
+# types in the struct 'T'
+function struct_read_fieldnames(filename::AbstractString, T::Type; remove_comment_leader=false)
+    values = Dict()
+    names = fieldnames(T)
+    open(filename) do f
+        for ln in eachline(f)
+            s = split(ln, "=")
+            length(s) == 1 && continue
+            n, v = s
+            (remove_comment_leader && n[1] == '#') && (n = n[2:end])
+            n = Symbol(strip(n))
+            v = strip(v)
+            values[n] = try
+                i = findin(names, [n])[1]
+                parse(T.types[i], v)
+            catch
+                v
+            end
+        end
+    end
+    return values
+end
+
+
 ##################### fell_lmax cache ###########################
 
-function calc_fell_lmax(ellmax::Integer, mm, RR, q, G, alpha, dlrec::Integer, dlrecRg1::Integer)
-	fell = Array{Complex{Float64}}(undef, 2, length(mm), length(RR))
-	lmax = Array{Int64}(undef, length(mm), length(RR))
+struct F21EllCache
+	ℓ::Int
+	Δℓ::Int
+	ΔℓRg1::Int
+	N::Int
+	q::Float64
+	kmin::Float64
+	kmax::Float64
+	χ0::Float64
+	RR::Array{Float64,1}
+	ℓmax::Array{Int,2}
+	f21::Array{ComplexF64,3}
+end
+
+
+function F21EllCache(ℓ::Int, RR, N=1600; q=1.1, kmin=1e-5, kmax=1e3, χ0=1e-3,
+		     Δℓ=4, ΔℓRg1=-4)
+	alpha = kmin * χ0
+	G = log(kmax / kmin)
+	N2 = div(N, 2) + 1
+	mm = 0:N2-1
+	f21 = Array{Complex{Float64}}(undef, 2, length(mm), length(RR))
+	ℓmax = Array{Int64}(undef, length(mm), length(RR))
 	for j=1:length(RR)
 		R = RR[j]
 		print("  R=$R:\t")
 		@time for i=1:length(mm)
 			m = mm[i]
-			dlr = R > 1 ? dlrecRg1    : dlrec
-			ell1 = ellmax
-			ell2 = ellmax + dlr
+			Δℓr = R > 1 ? ΔℓRg1    : Δℓ
+			ell1 = ℓ
+			ell2 = ℓ + Δℓr
 			ell = R > 1 ? ell2        : ell1
-			dl  = R > 1 ? ell1 - ell2 : ell2 - ell1
+			Δℓr = R > 1 ? ell1 - ell2 : ell2 - ell1
 			al  = R > 1 ? R*alpha     : alpha
 			Rn  = R > 1 ? 1/R         : R
-			fell[:,i,j], lmax[i,j] = calc_2f1_RqmG(ell, Rn, dl;
-			q=q, m=m, G=G, alpha=al)
+			f21[:,i,j], ℓmax[i,j] = calc_2f1_RqmG(ell, Rn, Δℓr;
+							      q=q, m=m, G=G,
+							      alpha=al)
 			if R > 1
-				lmax[i,j] += dl  # switch ell1 <-> ell2
+				ℓmax[i,j] += Δℓr  # switch ell1 <-> ell2
 			end
 		end
 	end
 	println()
-	return fell, lmax
+	F21EllCache(ℓ, Δℓ, ΔℓRg1, N, q, kmin, kmax, χ0, RR, ℓmax, f21)
 end
 
-function write_fell_lmax(fname, fell, lmax, ellmax, mm, RR, q, G, k0, r0, dl, dlRg1)
-	f = FITS(fname, "w")
-	header = FITSHeader(["program"], ["rfftlog23.jl"], ["created by Henry Gebhardt"])
-	write(f, lmax; name="lmax", header=header)
-	write(f, real(fell[1,:,:]); name="ReF000")
-	write(f, imag(fell[1,:,:]); name="ImF000")
-	write(f, real(fell[2,:,:]); name="ReF010")
-	write(f, imag(fell[2,:,:]); name="ImF010")
-	write(f, ["R"], [collect(RR)]; name="ratio")
-	write(f, ["m"], [collect(mm)]; name="mode")
-	close(f)
+
+function write(dname::AbstractString, t::F21EllCache)
+	mkpath(dname)
+	s = ""
+	names = fieldnames(typeof(t))
+	for n in names
+		field = getfield(t, n)
+		if typeof(field) <: AbstractArray
+			if n == :RR
+				ftmp = "$dname/$(string(n)).tsv"
+				writedlm(ftmp, field)
+			else
+				ftmp = "$dname/$(string(n)).bin"
+				write(ftmp, field)
+			end
+			field = ftmp
+		end
+		ln = "$(string(n)) = $field\n"
+		print(ln)
+		s *= ln
+	end
+	fname = "$dname/F21EllCache.dat"
+	write(fname, s)
 end
 
-function read_fell_lmax(fname="fell_lmax_v23.fits")
-	f = FITS(fname, "r")
-	lmax = read(f["lmax"])
-	ref000 = read(f["ReF000"])
-	imf000 = read(f["ImF000"])
-	ref010 = read(f["ReF010"])
-	imf010 = read(f["ImF010"])
-	RR = read(f["ratio"], "R")
-	mm = read(f["mode"], "m")
-	fell = Array{Complex{Float64}}(undef, 2, size(lmax)...)
-	fell[1,:,:] = ref000 + im*imf000
-	fell[2,:,:] = ref010 + im*imf010
-	close(f)
-	ellmax = maximum(lmax)  # Should read this from header
-	return fell, lmax, mm, RR, ellmax
+
+function F21EllCache(dname::AbstractString)
+	# read singular values
+	fname = "$dname/F21EllCache.dat"
+	values = struct_read_fieldnames(fname, F21EllCache; remove_comment_leader=false)
+
+	# read arrays
+	N2 = div(values[:N], 2) + 1
+	values[:RR] = readdlm(values[:RR])[:]
+	lenRR = length(values[:RR])
+	values[:ℓmax] = read(values[:ℓmax], Int, (N2, lenRR))
+	values[:f21] = read(values[:f21], ComplexF64, (2, N2, lenRR))
+
+	# put in correct order
+	names = fieldnames(F21EllCache)
+	filter!(n -> haskey(values, n), names)
+	vals = [values[n] for n in names]
+
+	# create struct
+	F21EllCache(vals...)
+end
+
+
+# for compatibility
+function read_fell_lmax(fell_lmax_file)
+	cache = F21EllCache(fell_lmax_file)
+	N2 = div(cache.N, 2) + 1
+	fell = cache.f21
+	flmax = cache.ℓmax
+	mm = 0:N2-1
+	RRcache = cache.RR
+	lmaxcache = cache.ℓ
+	return fell, flmax, mm, RRcache, lmaxcache
 end
 
 
@@ -1162,6 +1239,11 @@ function write_Mlcache_header(fname, Mell, RR, ell)
 	return f
 end
 
+function write_Mlcache_record(f, Mell)
+	@assert typeof(Mell) == Array{ComplexF64,3}
+	write(f, Mell)
+end
+
 function read_Mlcache_header(fname="Ml21-cache.bin")
 	f = open(fname, "r")
 	magic, lenmm, lenRR, lenjj, lenell = read!(f, Array{Int64}(undef, 5))
@@ -1173,8 +1255,8 @@ function read_Mlcache_header(fname="Ml21-cache.bin")
 end
 
 function read_Mlcache_record!(f, Mell)
-	@assert typeof(Mell) == Array{Float64,3}
-	read(f, Mell)
+	@assert typeof(Mell) == Array{ComplexF64,2}
+	read!(f, Mell)
 end
 
 
@@ -1222,168 +1304,16 @@ end
 
 ######################### public functions
 
-function make_fell_lmax_cache(RR, ellmax::Integer, fname="fell_lmax_v23.fits";
+function make_fell_lmax_cache(RR, ellmax::Integer, dname="f21ellcache";
 		N=1024, q=1.0, G=log(1e4/1e-4), r0=1.0, k0=1e-4, dlrec=4, dlrecRg1=-4)
-	q = Float64(q)
-	N2 = div(N, 2) + 1
-	mm = 0:N2-1
 	ellmax += 2
 	println("Calculating fmax: ")
         println("  dlrec    = $dlrec")
         println("  dlrecRg1 = $dlrecRg1")
-	@time fell, lmax = calc_fell_lmax(ellmax, mm, RR, q, G, k0*r0, dlrec, dlrecRg1)
-	write_fell_lmax(fname, fell, lmax, ellmax, mm, RR, q, G, k0, r0, dlrec, dlrecRg1)
-end
-
-
-function calcMll(RR;
-		kmin=1e-4, kmax=1e4, ell=42:42, r0=1.0, N=1024, q=1.0,
-		dlmin=-4, dlmax=4,
-		fell_lmax_even_dl_file="fell_lmax_even_dl.fits",
-		fell_lmax_odd_dl_file="fell_lmax_odd_dl.fits",
-		outfile="Mll-cache.fits",
-		TMell=Float64,
-	)
-
-	if length(ell) > 1
-		ell = sort(ell)
-	end
-
-	dlmineven = iseven(dlmin) ? dlmin : dlmin + 1
-	dlmaxeven = iseven(dlmax) ? dlmax : dlmax - 1
-	dlminodd = isodd(dlmin) ? dlmin : dlmin + 1
-	dlmaxodd = isodd(dlmax) ? dlmax : dlmax - 1
-
-	dlreceven = dlmaxeven
-	dlrecRg1even = dlmineven
-	dlrecodd = dlmaxodd
-	dlrecRg1odd = dlmaxodd
-
-	N2 = div(N, 2) + 1
-	k0 = kmin
-	G = log(kmax / kmin)
-	alpha = k0 * r0
-	#println("ell: $ell")
-	println("kmin = $kmin")
-	println("kmax = $kmax")
-        println("dlreceven    = $dlreceven")
-        println("dlrecRg1even = $dlrecRg1even")
-        println("dlrecodd    = $dlrecodd")
-        println("dlrecRg1odd = $dlrecRg1odd")
-
-	mm = 0:N2-1
-	tt = 2pi * mm / G
-	Am0 = (q - 1) / 2 - im * tt / 2
-
-	Melleven = Array{Complex{Float64}}(undef, length(mm), length(RR))
-	Mellbp1even = Array{Complex{Float64}}(undef, length(mm), length(RR))
-	Mellodd = Array{Complex{Float64}}(undef, length(mm), length(RR))
-	Mellbp1odd = Array{Complex{Float64}}(undef, length(mm), length(RR))
-
-	ndl = div(dlmax - dlmin, 2) + 1
-	work1 = Array{Complex{Float64}}(undef, size(Mell,1))
-	work2 = Array{Complex{Float64}}(undef, size(Mell,1))
-	wtRdlleven = Array{Complex{Float64}}(undef, length(mm), length(RR), ndl)  # tt, RR, dl
-	wtRdllodd = Array{Complex{Float64}}(undef, length(mm), length(RR), ndl)  # tt, RR, dl
-	wtRdll = Array{Complex{Float64}}(undef, length(mm), length(RR), dlmax - dlmin + 1)  # tt, RR, jj'
-
-	Mellsize = length(mm) * length(RR) * 4 * length(ell) * sizeof(Complex{TMell}(1))
-	println("Output size: $(Mellsize) bytes = $(Mellsize/2^30) GiB")
-	println("Output size: $(sizeof(wjj)) bytes = $(sizeof(wjj)/2^30) GiB")
-	#Mell32[:] = 0.0  # for testing
-	f = write_Mlcache_header(outfile, wtRdll, RR, ell)
-
-	print("Reading '$fell_lmax_even_dl_file'... ")
-	@time felleven, flmaxeven, mm, RRcache, lmaxcacheeven = read_fell_lmax(fell_lmax_even_dl_file)
-	print("Reading '$fell_lmax_odd_dl_file'... ")
-	@time fellodd, flmaxodd, mm, RRcache, lmaxcacheodd = read_fell_lmax(fell_lmax_odd_dl_file)
-	ellmax = max(maximum(ell), maximum(lmaxcacheeven), maximum(lmaxcacheodd))
-	println("ellmax: $ellmax")
-	println("lmaxcacheeven: $lmaxcacheeven")
-	println("lmaxcacheodd: $lmaxcacheodd")
-	@assert length(mm) == N2
-	@assert all(RRcache .== RR)
-	RRnorm = deepcopy(RR)
-	RRnorm[RR.>1] = 1 ./ RR[RR.>1]
-
-	# backward recursion
-	tstep = @timed Nothing
-	tswapping = @timed Nothing
-	tcalcMl = @timed Nothing
-	tcalcwl = @timed Nothing
-	tcalcwljj = @timed Nothing
-	tcalcprefac = @timed Nothing
-	tout = @timed Nothing
-	twrite = @timed Nothing
-	ttest = @timed Nothing
-	global t0 = @timed Nothing
-	global tm2 = @timed Nothing
-	global tm2s = @timed Nothing
-	global tm4 = @timed Nothing
-	global tp2 = @timed Nothing
-	global tp2s = @timed Nothing
-	global tp4 = @timed Nothing
-	ll = length(ell)
-	tic()
-	@time for ellnow in ellmax:-1:minimum(ell)
-		println("ellnow: $ellnow")
-		if ellnow == ell[ll]
-			print("ell $ellnow, ")
-			toc()
-			tic()
-			tcalcMl += @timed calc_Mellell_lmax!(ellnow, felleven, flmaxeven,
-				Melleven, Mellbp1even)
-			tcalcMl += @timed calc_Mellell_lmax!(ellnow, fellodd, flmaxodd,
-				Mellodd, Mellbp1odd)
-			tcalcwl += @timed calc_wtdll!(wtRdlleven, Melleven, Mellbp1even,
-				Am0, ellnow, dlreceven, dlrecRg1even,
-				dlmineven, dlmaxeven, RR, RRnorm, work1, work2)
-			tcalcwl += @timed calc_wtdll!(wtRdllodd, Mellodd, Mellbp1odd,
-				Am0, ellnow, dlrecodd, dlrecRg1odd, dlminodd,
-				dlmaxodd, RR, RRnorm, work1, work2)
-
-			# merge even and odd
-			for dl=dlmin:dlmax
-				i = dl - dlmin + 1
-				j = div(i, 2) + 1
-				if iseven(dl)
-					wtRdll[:,:,i] .= wtRdlleven[:,:,j]
-				else
-					wtRdll[:,:,i] .= wtRdllodd[:,:,j]
-				end
-			end
-
-			# now we have everything together to calculate for ell=ellnow+jmax
-			twrite += @timed write(f, wtRdll)
-
-			ll -= 1
-		end
-
-		tstep += @timed stepback!(RR, ellnow, Am0, dlrec, fell, flmax)
-		tstep += @timed stepbackRg1!(RR, ellnow, Am0, dlrecRg1, fell, flmax)
-	end
-	toc()
-	timed_println("step:          ", tstep)
-	timed_println("swapping:      ", tswapping)
-	timed_println("calc_Mellell!: ", tcalcMl)
-	timed_println("  t0 :  ", t0)
-	timed_println("  tm2 : ", tm2)
-	timed_println("  tm2s: ", tm2s)
-	timed_println("  tm4 : ", tm4)
-	timed_println("  tp2 : ", tp2)
-	timed_println("  tp2s: ", tp2s)
-	timed_println("  tp4 : ", tp4)
-	timed_println("calc_wtdll!:   ", tcalcwl)
-	timed_println("calc_wljj!:    ", tcalcwljj)
-	timed_println("mult_prefac!:  ", tcalcprefac)
-	timed_println("convert:       ", tout)
-	timed_println("write:         ", twrite)
-	timed_println("test_rand_2f1: ", ttest)
-
-	print("Closing outfile $outfile... ")
-	@time close(f)
-
-	return tt
+	@time cache = F21EllCache(ellmax, RR, N; q=q, kmin=k0,
+				  kmax=k0*exp(G), χ0=r0, Δℓ=dlrec,
+				  ΔℓRg1=dlrecRg1)
+	write(dname, cache)
 end
 
 
@@ -1480,7 +1410,7 @@ function calcMljj(RR;
 			# now we have everything together to calculate for ell=ellnow+jmax
 			tcalcwljj += @timed wljj_from_wldl!(wtRdll[-2], wtRdll[0], wtRdll[2],
 				ellnow + jmax, wjj)
-			twrite += @timed write(f, wjj)
+			twrite += @timed write_Mlcache_record(f, wjj)
 			ll -= 1
 		end
 
@@ -1579,10 +1509,10 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 	@time for ll in ellcache
 		#tic()
 		tread += @timed begin
-			read!(f, wt00)
-			read!(f, wt02)
-			read!(f, wt20)
-			read!(f, wt22)
+			read_Mlcache_record!(f, wt00)
+			read_Mlcache_record!(f, wt02)
+			read_Mlcache_record!(f, wt20)
+			read_Mlcache_record!(f, wt22)
 		end
 		tmultphi += @timed begin
 			mymult!(wt00, phi, lenRR)

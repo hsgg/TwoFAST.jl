@@ -142,6 +142,17 @@ function test_wl_ℓRR(ℓ)
 end
 
 
+########################## test F21EllCache ######################
+function test_F21EllCache()
+    RR = collect(0.6:0.1:1.1)
+    @show RR-1
+    cache = TwoFAST.F21EllCache(1200, RR)
+    write("out/f21ellcache", cache)
+    cache2 = TwoFAST.F21EllCache("out/f21ellcache")
+    # ... at least it compiles ...
+end
+
+
 end # module
 
 
@@ -165,5 +176,6 @@ TestTwoFAST.test_wl_χ2303_R(0.2, 1e-11)
 TestTwoFAST.test_wl_χ2303_R(0.1, 1e-11)
 TestTwoFAST.test_wl_ℓRR(42)
 
+TestTwoFAST.test_F21EllCache()
 
 # vim: set sw=4 et sts=4 :
