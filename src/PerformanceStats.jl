@@ -12,6 +12,7 @@ module PerformanceStats
 
 export +, timed_println
 import Base.+  # This is the function we want to extend
+import Base.show
 
 if VERSION <= v"0.6.9"
 	using Compat
@@ -33,6 +34,7 @@ function +(x::Base.GC_Diff, y::Base.GC_Diff)
 		x.full_sweep	+ y.full_sweep)	# Number of GC full collection
 end
 
+
 function +(x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
 	   y::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff})
 	return (Nothing,	# value of the expression
@@ -41,6 +43,7 @@ function +(x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
 		x[4] + y[4],	# garbage collection time
 		x[5] + y[5])	# GC_Diff object
 end
+
 
 function prettyprint_getunits_now(value, units, factor)
 	if value == 0 || value == 1
@@ -55,14 +58,16 @@ function prettyprint_getunits_now(value, units, factor)
 	return round(number, digits=3), units[u]
 end
 
-function timed_println(prefix, x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff})
+
+function show(stream::IO, x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff})
 	mem_units = [" byte", " KB", " MB", " GB", " TB", " PB"]
 	cnt_units = ["", " k", " M", " G", " T", " P"]
 	allocs = x[5].malloc + x[5].realloc + x[5].poolalloc + x[5].bigalloc
 	bytes, mb = prettyprint_getunits_now(x[3], mem_units, 1024)
 	allocs, ma = prettyprint_getunits_now(allocs, cnt_units, 1000)
-	s = string("$(round(x[2],digits=6)) sec ($(allocs)$(ma) allocations: $(bytes)$(mb), $(round(100*x[4]/x[2],digits=2))% gc time)")
-	println(prefix, s)
+	s = "$(round(x[2],digits=6)) sec ($(allocs)$(ma) allocations: $(bytes)$(mb), $(round(100*x[4]/x[2],digits=2))% gc time)"
+	write(stream, s)
 end
+
 
 end
