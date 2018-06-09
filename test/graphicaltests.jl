@@ -243,18 +243,20 @@ end
 
 
 # along χ
-function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6)
+function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6; plotluc=true)
     println("plot_cl_χ(ℓ=$ℓ, jjidx=$jjidx)...")
     RR = [1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     #RR = [0.9]
 
     # get Lucas data
-    luc = Dict()
-    lucχ = readdlm("data/wljj_R0.9_ell$(ℓ).tsv")[:,1]
-    sel = (0.75e1 .<= lucχ .<= 2e5)
-    lucχ = lucχ[sel]
-    for R in RR
-        luc[R] = readdlm("data/wljj_R$(R)_ell$(ℓ).tsv")[sel,jjidx+1]
+    if plotluc
+        luc = Dict()
+        lucχ = readdlm("data/wljj_R0.9_ell$(ℓ).tsv")[:,1]
+        sel = (0.75e1 .<= lucχ .<= 2e5)
+        lucχ = lucχ[sel]
+        for R in RR
+            luc[R] = readdlm("data/wljj_R$(R)_ell$(ℓ).tsv")[sel,jjidx+1]
+        end
     end
 
     # get 2-FAST data
@@ -275,7 +277,7 @@ function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6)
     setp(ax1[:get_xticklabels](), visible=false)
     setp(ax2[:get_xticklabels](), visible=false)
     for i=1:length(RR)
-        logplot(lucχ, fac * luc[RR[i]], ax=ax1, color="0.55")
+        plotluc && logplot(lucχ, fac * luc[RR[i]], ax=ax1, color="0.55")
         logplot(χ, fac * wjj[:,i], ax=ax1, label="\$R=$(RR[i])\$", ls="--")
     end
     ax1[:set_ylabel](L"$w_{\ell,jj'}$")
@@ -283,7 +285,7 @@ function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6)
     ax1[:legend](loc="upper right")
     ax1[:set_yscale]("log")
 
-    for i=1:length(RR)
+    plotluc && for i=1:length(RR)
         w = Spline1D(χ, wjj[:,i])(lucχ)
         ax2[:plot](lucχ, w - luc[RR[i]], label="diff, \$R=$(RR[i])\$", ls="--")
         ax3[:plot](lucχ, (w - luc[RR[i]]) ./ luc[RR[i]], label="rdiff, \$R=$(RR[i])\$", ls="--")
@@ -326,12 +328,16 @@ close("all")
 #GraphicTests.plot_cl(0.2)
 #GraphicTests.plot_cl(0.1)
 
-GraphicTests.plot_cl_χ′(0.1, 42)
+#GraphicTests.plot_cl_χ′(0.1, 42)
 
-#GraphicTests.plot_cl_χ(42, 1)
-#GraphicTests.plot_cl_χ(42, 2)
-#GraphicTests.plot_cl_χ(42, 3)
-#GraphicTests.plot_cl_χ(42, 4)
+GraphicTests.plot_cl_χ(42, 1; plotluc=true)
+GraphicTests.plot_cl_χ(42, 2; plotluc=true)
+GraphicTests.plot_cl_χ(42, 3; plotluc=true)
+GraphicTests.plot_cl_χ(42, 4; plotluc=true)
+#GraphicTests.plot_cl_χ(100, 1; plotluc=false)
+#GraphicTests.plot_cl_χ(100, 2; plotluc=false)
+#GraphicTests.plot_cl_χ(100, 3; plotluc=false)
+#GraphicTests.plot_cl_χ(100, 4; plotluc=false)
 
 show()
 
