@@ -1,15 +1,14 @@
 #!/usr/bin/env julia
 
-include("PkSpectra.jl")
+module GraphicTests
 include("TwoFASTTestLib.jl")
 
-module GraphicTests
-
 using TwoFAST
-using TwoFASTTestLib
+using .TwoFASTTestLib
 using PyCall
 using PyPlot
 using Dierckx
+using DelimitedFiles
 @pyimport matplotlib.gridspec as gridspec
 
 
@@ -27,8 +26,8 @@ function logplot(x, y; ax=gca(), kwargs...)
     kwargs[:color] = l[1][:get_color]()
     kwargs[:alpha] = l[1][:get_alpha]()
     kwargs[:linestyle] = l[1][:get_linestyle]()
-    try delete!(kwargs, :label) end
-    try delete!(kwargs, :ls) end
+    try delete!(kwargs, :label) catch end
+    try delete!(kwargs, :ls) catch end
 
 
     if kwargs[:linestyle] == "-"
@@ -64,7 +63,7 @@ function plot_xi_rdiff(ℓ)
         s0 = Spline1D(r0, xi0[:,i])
         s1 = Spline1D(r1, xi1[i])
         r = r0[1:10:end]
-        diff = s1(r) - s0(r)
+        diff = s1(r) .- s0(r)
         rdiff = diff ./ s0(r)
         ax1[:plot](r0, xi0[:,i], "0.5", alpha=0.75, zorder=-1)
         ax1[:plot](r1, xi1[i], "--", label="\$\\xi_$ℓ^{$ν}(r)\$")
@@ -98,7 +97,7 @@ function plot_xi_derivs()
     r2, ξ2m2 = calc_2fast_xi(2, [-2])
     ξ = Spline1D(r0, ξ00[1])
     ξ′ = Spline1D(r1, - ξ1m1[1] ./ r1)
-    ξ″ = Spline1D(r2, (ξ2m2[1] - ξ1m1[1]) ./ r2.^2)
+    ξ″ = Spline1D(r2, (ξ2m2[1] .- ξ1m1[1]) ./ r2.^2)
 
     r = rq[1:10:end]
 
@@ -189,22 +188,22 @@ function plot_cl(R=1.0, xmax=1200, y2max=1.5e-6)
     ax1[:plot](ell, fac * w22, label=L"(j,j')=(2,2)", ls="--")
     ax1[:hlines](0.0, 0, 1200, color="0.85")
     ax1[:set_ylabel](L"$w_{\ell,jj'}$")
-    ax1[:ticklabel_format](styl="sci", scilimits=(-1,4))
+    ax1[:ticklabel_format](style="sci", scilimits=(-1,4))
     ax1[:legend](loc="upper right")
 
-    ax2[:plot](ell, w00 - luc00, label=L"diff, jj'=00")
-    ax2[:plot](ell, w02 - luc02, label=L"diff, jj'=02")
-    ax2[:plot](ell, w20 - luc20, label=L"diff, jj'=20")
-    ax2[:plot](ell, w22 - luc22, label=L"diff, jj'=22")
+    ax2[:plot](ell, w00 .- luc00, label=L"diff, jj'=00")
+    ax2[:plot](ell, w02 .- luc02, label=L"diff, jj'=02")
+    ax2[:plot](ell, w20 .- luc20, label=L"diff, jj'=20")
+    ax2[:plot](ell, w22 .- luc22, label=L"diff, jj'=22")
     ax2[:set_ylabel](L"$\Delta w$")
     ax2[:ticklabel_format](style="sci", axis="y", scilimits=(0,0), useOffset=false)
     #ax2[:get_yaxis]()[:get_offset_text]()[:set_y](0.5)
     #ax2[:yaxis]()[:offsetText]()
 
-    ax3[:plot](ell, (w00 - luc00) ./ luc00, label="rdiff, jj'=00", ls="--")
-    ax3[:plot](ell, (w02 - luc02) ./ luc02, label="rdiff, jj'=02", ls="--")
-    ax3[:plot](ell, (w20 - luc20) ./ luc20, label="rdiff, jj'=20", ls="--")
-    ax3[:plot](ell, (w22 - luc22) ./ luc22, label="rdiff, jj'=22", ls="--")
+    ax3[:plot](ell, (w00 .- luc00) ./ luc00, label="rdiff, jj'=00", ls="--")
+    ax3[:plot](ell, (w02 .- luc02) ./ luc02, label="rdiff, jj'=02", ls="--")
+    ax3[:plot](ell, (w20 .- luc20) ./ luc20, label="rdiff, jj'=20", ls="--")
+    ax3[:plot](ell, (w22 .- luc22) ./ luc22, label="rdiff, jj'=22", ls="--")
     ax3[:set_ylabel](L"$\Delta w / w$")
     ax3[:ticklabel_format](style="sci", axis="y", scilimits=(0,0), useOffset=false)
     ax3[:set_xlabel](L"$\ell$")
@@ -234,7 +233,7 @@ function plot_cl_χ′(dχ′, ℓ=42)
     plot(χ′, w22, label=L"(j,j')=(2,2)", ls="--")
     xlabel(L"\chi'")
     ylabel(L"$w_{\ell,jj'}$")
-    ticklabel_format(styl="sci", scilimits=(-1,4))
+    ticklabel_format(style="sci", scilimits=(-1,4))
     legend(loc="upper right")
 
     tight_layout()
@@ -281,7 +280,7 @@ function plot_cl_χ(ℓ=42, jjidx=1, y2max=1.5e-6; plotluc=true)
         logplot(χ, fac * wjj[:,i], ax=ax1, label="\$R=$(RR[i])\$", ls="--")
     end
     ax1[:set_ylabel](L"$w_{\ell,jj'}$")
-    ax1[:ticklabel_format](styl="sci", scilimits=(-1,4))
+    ax1[:ticklabel_format](style="sci", scilimits=(-1,4))
     ax1[:legend](loc="upper right")
     ax1[:set_yscale]("log")
 
@@ -330,14 +329,14 @@ close("all")
 
 #GraphicTests.plot_cl_χ′(0.1, 42)
 
-GraphicTests.plot_cl_χ(42, 1; plotluc=true)
-GraphicTests.plot_cl_χ(42, 2; plotluc=true)
-GraphicTests.plot_cl_χ(42, 3; plotluc=true)
-GraphicTests.plot_cl_χ(42, 4; plotluc=true)
-#GraphicTests.plot_cl_χ(100, 1; plotluc=false)
-#GraphicTests.plot_cl_χ(100, 2; plotluc=false)
-#GraphicTests.plot_cl_χ(100, 3; plotluc=false)
-#GraphicTests.plot_cl_χ(100, 4; plotluc=false)
+#GraphicTests.plot_cl_χ(42, 1; plotluc=true)
+#GraphicTests.plot_cl_χ(42, 2; plotluc=true)
+#GraphicTests.plot_cl_χ(42, 3; plotluc=true)
+#GraphicTests.plot_cl_χ(42, 4; plotluc=true)
+GraphicTests.plot_cl_χ(100, 1; plotluc=false)
+GraphicTests.plot_cl_χ(100, 2; plotluc=false)
+GraphicTests.plot_cl_χ(100, 3; plotluc=false)
+GraphicTests.plot_cl_χ(100, 4; plotluc=false)
 
 show()
 

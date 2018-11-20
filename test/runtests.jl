@@ -1,21 +1,15 @@
 #!/usr/bin/env julia
 
-include("PkSpectra.jl")
-include("TwoFASTTestLib.jl")
-
 
 module TestTwoFAST
 
+include("TwoFASTTestLib.jl")
+
 using TwoFAST
-@static if VERSION < v"0.7.0-DEV.2005"
-    using Base.Test
-else
-    using Test
-end
+using Test
 using Dierckx
-using ...PkSpectra
-using ...TwoFASTTestLib
-using Compat.DelimitedFiles
+using .TwoFASTTestLib
+using DelimitedFiles
 
 
 ############### test xicalc #######################
@@ -145,7 +139,7 @@ end
 ########################## test F21EllCache ######################
 function test_F21EllCache()
     RR = collect(0.6:0.1:1.1)
-    @show RR-1
+    @show RR .- 1
     cache = TwoFAST.F21EllCache(1200, RR)
     write("out/f21ellcache", cache)
     cache2 = TwoFAST.F21EllCache("out/f21ellcache")

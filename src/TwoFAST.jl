@@ -15,8 +15,9 @@ using .Miller
 # other packages
 using FFTW
 using IncGammaBeta
-using Compat
-using Compat.LinearAlgebra
+using LinearAlgebra
+using SpecialFunctions
+using DelimitedFiles
 #using SphBes
 
 import Base.write
@@ -390,7 +391,7 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 	elseif R == 1
 		calc_fmax_unity(ell) = calc_Mll_unity(ell, n, dl, alpha)
 		fell = calc_fmax_unity(ell)
-		if !all(isfinite.(fell)) || norm(fell) < Miller.realmin(fell)
+		if !all(isfinite.(fell)) || norm(fell) < Miller.floatmin(fell)
 			fell, ell = Miller.calc_underflow_fmax(ell, calc_fmax_unity)
 		end
 	else
@@ -1102,8 +1103,7 @@ function struct_read_fieldnames(filename::AbstractString, T::Type; remove_commen
             n = Symbol(strip(n))
             v = strip(v)
             values[n] = try
-                i = findin(names, [n])[1]
-                parse(T.types[i], v)
+                parse(fieldtype(T, n), v)
             catch
                 v
             end
@@ -1197,12 +1197,11 @@ function F21EllCache(dname::AbstractString)
 	N2 = div(values[:N], 2) + 1
 	values[:RR] = readdlm(values[:RR])[:]
 	lenRR = length(values[:RR])
-	values[:ℓmax] = read(values[:ℓmax], Int, (N2, lenRR))
-	values[:f21] = read(values[:f21], ComplexF64, (2, N2, lenRR))
+	values[:ℓmax] = read!(values[:ℓmax], Array{Int}(undef, N2, lenRR))
+	values[:f21] = read!(values[:f21], Array{Complex{Float64}}(undef, 2, N2, lenRR))
 
 	# put in correct order
 	names = fieldnames(F21EllCache)
-	filter!(n -> haskey(values, n), names)
 	vals = [values[n] for n in names]
 
 	# create struct
@@ -1284,7 +1283,7 @@ end
 function brfft_exec!(w, wt, brfft_plan, N)
 	for i=1:N
 		#w[:,i] = brfft_plan * wt[:,i]
-		A_mul_B!(view(w, :, i), brfft_plan, view(wt,:,i))
+		mul!(view(w, :, i), brfft_plan, view(wt,:,i))
 	end
 end
 
@@ -1371,7 +1370,7 @@ function calcMljj(RR;
 	@assert all(RRcache .== RR)
 	RRnorm = deepcopy(RR)
 	RRnorm[RR.>1] = 1 ./ RR[RR.>1]
-        println("fell[1,1] = ", fell[1,1])
+        println("fell[:,1,1] = ", fell[:,1,1])
 
 	# backward recursion
 	tstep = @timed Nothing
@@ -1392,13 +1391,13 @@ function calcMljj(RR;
 	global tp4 = @timed Nothing
 	ll = length(ell)
 	llen = length(ellenlarged)
-	tic()
+	timing = time()
 	@time for ellnow in ellmax:-1:minimum(ellenlarged)
 		println("ellnow: $ellnow")
 		if ellnow == ellenlarged[llen]
 			print("ell $ellnow, ")
-			toc()
-			tic()
+			println("elapsed: ", time() - timing)
+			timing = time()
 			tcalcMl += @timed calc_Mellell_lmax!(ellnow, fell, flmax,
 				Mell, Mellbp1)
 			tcalcwl += @timed calc_wtdll!(wtRdll[-jmax], Mell, Mellbp1,
@@ -1424,7 +1423,7 @@ function calcMljj(RR;
 			wtRdll[-jmax] = wtmp
 		end
 	end
-	toc()
+	println("elapsed: ", time() - timing)
 	println("step:          ", tstep)
 	println("swapping:      ", tswapping)
 	println("calc_Mellell!: ", tcalcMl)
@@ -1559,3 +1558,6 @@ end
 
 
 end # module
+
+
+# vim : set sw=4 et sts=4 :

@@ -1,5 +1,4 @@
 #!/usr/bin/env julia
-##!/home/hsgg/hetdex/julia
 
 # Written by Henry Gebhardt (2016-2017)
 

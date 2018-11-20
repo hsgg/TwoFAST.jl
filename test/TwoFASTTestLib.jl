@@ -2,6 +2,7 @@
 
 
 module TwoFASTTestLib
+include("PkSpectra.jl")
 
 export get_quadosc_xi
 export calc_2fast_xi
@@ -11,8 +12,8 @@ export calc_wlrr_χ2303_χ′
 export calc_wlrr_ℓR
 
 using TwoFAST
-using ...PkSpectra
-using Compat.DelimitedFiles
+using .PkSpectra
+using DelimitedFiles
 
 
 ##################### ξ(r) tests ##########################

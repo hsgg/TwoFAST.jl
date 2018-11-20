@@ -3,11 +3,10 @@ module Miller
 export miller
 
 
-using Compat
-using Compat.LinearAlgebra
+using LinearAlgebra
 
-import Base.realmin
-realmin(arr) = realmin(typeof(real(arr[1])))
+import Base.floatmin
+floatmin(arr) = floatmin(typeof(real(arr[1])))
 
 
 # find_nseedmin():
@@ -211,7 +210,7 @@ function calc_underflow_fmax(nmax, calc_f)
     while nmid != nmin && nmid != nmax
         #println("==>$nmid:")
         fnew = calc_f(nmid)
-        if !all(isfinite.(fnew)) || norm(fnew) < realmin(fnew)
+        if !all(isfinite.(fnew)) || norm(fnew) < floatmin(fnew)
             nmax = nmid
         else
             nmin = nmid

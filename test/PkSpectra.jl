@@ -6,7 +6,7 @@ export PkSpectrum
 
 
 using Dierckx  # same as used in the TwoFAST tests
-using Compat.DelimitedFiles
+using DelimitedFiles
 
 
 struct PkSpectrum
