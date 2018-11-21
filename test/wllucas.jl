@@ -2,30 +2,21 @@
 
 # Written by Henry Gebhardt (2016-2017)
 
-using Hwloc
+#using Hwloc
+#num_physical_cores = Hwloc.num_physical_cores()
+num_physical_cores = 2
+
+using Distributed
 println("nprocs: ", nprocs())
 println("nworkers: ", nworkers())
-addprocs(Hwloc.num_physical_cores() + 1 - nprocs())
-#addprocs(4 + 1 - nprocs())
+addprocs(num_physical_cores + 1 - nprocs())
 println("hostname: ", gethostname())
 println("julia version: ", VERSION)
 println("nprocs: ", nprocs())
 println("nworkers: ", nworkers())
 
 
-@everywhere include("PkSpectra.jl")
-
-@everywhere dir = "$(homedir())/research/hgebhardt/code/mypy"
-try
-	@everywhere include("$dir/bisect.jl")
-	@everywhere include("$dir/sphbes/sphbes.jl")
-	@everywhere include("$dir/quad_jar_jbt.jl")
-catch
-	println("Cannot load essential libraries from `$dir`")
-	println("They are not included because the license is unclear to me.")
-	println("What is the numerical recipes license?")
-	error("Cannot load essential libraries.")
-end
+@everywhere include("$(homedir())/research/hgebhardt/myjl/include.jl")
 
 
 #=
@@ -54,11 +45,15 @@ end
 
 @everywhere module WlLucas
 
-using PkSpectra
-using Quadjarjbt
+include("PkSpectra.jl")
+
+using .PkSpectra
+using Quad_jar_jbt
+using DelimitedFiles
+using Distributed
 
 # Lucas 1995
-function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, n=0; reltol=1e-10)
+function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, n=0; rtol=1e-10)
 	beta = 3 + n
 	function f(lnk)
 		if lnk > 236.0  # = log(cbrt(FLOAT_MAX))
@@ -73,9 +68,9 @@ function wllrr(ell1::Integer, ell2::Integer, r1::Number, r2::Number, pwr, n=0; r
 		return ret
 	end
 	t = @elapsed I, E = quad_jar_jbt_log(f, -Inf, Inf, ell1, ell2, r1, r2;
-		n1=ell1>3?ell1^2:3,
-		n2=ell2>3?ell2^2:3,
-		reltol=reltol, abstol=1e-14, order=511)
+		n1= ell1>3 ? ell1^2 : 3,
+		n2= ell2>3 ? ell2^2 : 3,
+		rtol=rtol, atol=1e-14, order=511)
 	I *= 2/pi
 	E *= 2/pi  # Note: Error E is not reliable
 	println("wl(ℓ₁=$ell1, ℓ₂=$ell2, r₁=$r1, r₂=$r2) = $I: took $t sec")

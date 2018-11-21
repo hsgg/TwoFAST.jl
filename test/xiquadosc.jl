@@ -1,8 +1,16 @@
 #!/usr/bin/env julia
 
-using Hwloc
-addprocs(Hwloc.num_physical_cores())
-#addprocs(4)
+
+
+
+#using Hwloc
+#num_physical_cores = Hwloc.num_physical_cores()
+num_physical_cores = 2
+
+using Distributed
+println("nprocs: ", nprocs())
+println("nworkers: ", nworkers())
+addprocs(num_physical_cores + 1 - nprocs())
 println("hostname: ", gethostname())
 println("julia version: ", VERSION)
 println("nprocs: ", nprocs())
@@ -10,23 +18,13 @@ println("nworkers: ", nworkers())
 
 
 @everywhere include("PkSpectra.jl")
+@everywhere include("$(homedir())/research/hgebhardt/myjl/include.jl")
 
-@everywhere dir = "$(homedir())/research/hgebhardt/code/mypy"
-try
-	@everywhere include("$dir/bisect.jl")
-	@everywhere include("$dir/quadosc.jl")
-	@everywhere include("$dir/sphbes/sphbes.jl")
-catch
-	println("Cannot load essential libraries from `$dir`")
-	println("They are not included because the license is unclear to me.")
-	println("What is the numerical recipes license?")
-	error("Cannot load essential libraries.")
-end
-
-using PkSpectra
+@everywhere using .PkSpectra
 @everywhere using QuadOsc
 @everywhere using SphBes
-@everywhere using QuadGK: quadgk
+@everywhere using QuadGK
+@everywhere using DelimitedFiles
 
 
 
@@ -47,30 +45,30 @@ using PkSpectra
 end
 
 
-@everywhere function corrfunc(r::Number, pwr, ell=0, nu=0; reltol=1e-10, order=127)
+@everywhere function corrfunc(r::Number, pwr, ell=0, nu=0; rtol=1e-10, order=127)
 	if r == 0
 		return 0.0
 	end
 	integ(lnk) = integrand(lnk, r, pwr, ell, nu)
 	pivot = 0.0
 	#print("computing r=$r... ")
-	I0, E0 = quadgk(integ, -Inf, pivot, reltol=reltol, order=order)
+	I0, E0 = quadgk(integ, -Inf, pivot, rtol=rtol, order=order)
 	I1, E1 = quadosc(integ, pivot, Inf, n -> log(n * pi / r), beta=1.0,
-		reltol=reltol, order=order)
+		rtol=rtol, order=order)
 	factor = 1 / (2 * pi^2 * r^nu)
 	return factor * (I0 + I1), factor * (E0 + E1)
 end
 
-function corrfunc(rr, pwr, ell=0, nu=0; reltol=1e-10, order=127)
+function corrfunc(rr, pwr, ell=0, nu=0; rtol=1e-10, order=127)
 	print("ξ(r), ℓ=$ell, ν=$nu: ")
 	if (nu == -2 && ell ∈ [0, 1, 2, 3, 4] ||
 	    nu == -1 && ell ∈ [1])
 		println("Skipping...")
 		return fill(NaN, length(rr)), fill(NaN, length(rr))
 	end
-	@time tmp = pmap(r -> corrfunc(r, pwr, ell, nu, reltol=reltol, order=order), rr)
-	xi = Array{Float64}(length(rr))
-	xie = Array{Float64}(length(rr))
+	@time tmp = pmap(r -> corrfunc(r, pwr, ell, nu, rtol=rtol, order=order), rr)
+	xi = Array{Float64}(undef, length(rr))
+	xie = Array{Float64}(undef, length(rr))
 	for i=1:length(rr)
 		xi[i] = tmp[i][1]
 		xie[i] = tmp[i][2]
@@ -81,7 +79,7 @@ end
 
 function more_xi(ℓ=0)
 	pkin = PkSpectrum()
-	r = linspace(1.0, 200.0, Int(199/0.1) + 1)
+	r = range(1.0, stop=200.0, length=Int(199/0.1) + 1)
 
 	xiℓ = [corrfunc(r, pkin, ℓ, ν)[1] for ν=-2:3]
 
