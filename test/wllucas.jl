@@ -164,8 +164,8 @@ end
 function wldl_to_wljj(infname, outfname; abs_coeff=false)
 	wll = readdlm(infname)
 	wldl = Dict()
-	ell = Array{Int}(Int(sum(wll[:,end])))
-	wjj = Array{Float64}(length(ell), 4)
+	ell = Array{Int}(undef, Int(sum(wll[:,end])))
+	wjj = Array{Float64}(undef, length(ell), 4)
 	e0 = 2
 	m2 = 3
 	p2 = 4
