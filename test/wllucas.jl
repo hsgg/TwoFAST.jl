@@ -32,7 +32,7 @@ function wllrr(k3pk, dlnk, kr1, kr2, ell1, ell2)
 end
 function wllrr(ell1, ell2, r1::Number, r2::Number, pk, beta=3)
 	N = 2^20
-	k = logspace(-3, 3, N)
+	k = 10.0 .^ range(-3, stop=3, length=N)
 	dlnk = (log(maximum(k)) - log(minimum(k))) / N
 	k3pk = k.^beta .* pk(k)
 	kr1 = k .* r1
@@ -204,7 +204,7 @@ end
 
 
 # along χ
-function calc_wlRℓ(R, ℓ, χrange=logspace(0, 5, 800))
+function calc_wlRℓ(R, ℓ, χrange=10.0 .^ range(0, stop=5, length=800))
 	calc_wldlRℓ(R, ℓ-2, 0, χrange; fname="data/wldl_R$(R)_ell$(ℓ-2).tsv")
 	calc_wldlRℓ(R, ℓ,   0, χrange; fname="data/wldl_R$(R)_ell$(ℓ).tsv")
 	calc_wldlRℓ(R, ℓ+2, 0, χrange; fname="data/wldl_R$(R)_ell$(ℓ+2).tsv")
