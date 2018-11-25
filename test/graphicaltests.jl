@@ -333,10 +333,11 @@ GraphicTests.plot_cl_χ(42, 1; plotluc=true)
 GraphicTests.plot_cl_χ(42, 2; plotluc=true)
 GraphicTests.plot_cl_χ(42, 3; plotluc=true)
 GraphicTests.plot_cl_χ(42, 4; plotluc=true)
-GraphicTests.plot_cl_χ(100, 1; plotluc=false)
-GraphicTests.plot_cl_χ(100, 2; plotluc=false)
-GraphicTests.plot_cl_χ(100, 3; plotluc=false)
-GraphicTests.plot_cl_χ(100, 4; plotluc=false)
+
+GraphicTests.plot_cl_χ(100, 1; plotluc=true)
+GraphicTests.plot_cl_χ(100, 2; plotluc=true)
+GraphicTests.plot_cl_χ(100, 3; plotluc=true)
+GraphicTests.plot_cl_χ(100, 4; plotluc=true)
 
 show()
 

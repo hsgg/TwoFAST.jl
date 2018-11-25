@@ -126,10 +126,10 @@ function test_wl_ℓRR(ℓ)
             #    diff = w[k] - lucw[k]
             #    rdiff = (w[k] - lucw[k]) / lucw[k]
             #    @show diff, rdiff
-            #    @test isapprox(w[k], lucw[k], atol=1e-8, rtol=5e-5)
+            #    @test isapprox(w[k], lucw[k], atol=5e-10, rtol=2e-4)
             #end
             print("Testing jjidx=$jjidx, R=$R...")
-            @test all(isapprox.(w, lucw, atol=5e-10, rtol=5e-5))
+            @test all(isapprox.(w, lucw, atol=5e-10, rtol=2e-4))
             println(" passed")
         end
     end
@@ -169,6 +169,7 @@ TestTwoFAST.test_wl_χ2303_R(0.3, 1e-11)
 TestTwoFAST.test_wl_χ2303_R(0.2, 1e-11)
 TestTwoFAST.test_wl_χ2303_R(0.1, 1e-11)
 TestTwoFAST.test_wl_ℓRR(42)
+TestTwoFAST.test_wl_ℓRR(100)
 
 TestTwoFAST.test_F21EllCache()
 
