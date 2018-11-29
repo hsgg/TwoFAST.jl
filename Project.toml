@@ -7,3 +7,6 @@ version = "0.1.0"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 IncGammaBeta = "5087d2c0-5ad2-51de-b1ef-eaf82f0743fd"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+
+[compat]
+julia = "1.0"
