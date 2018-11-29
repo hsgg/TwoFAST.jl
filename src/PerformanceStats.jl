@@ -14,12 +14,6 @@ export +, timed_println
 import Base.+  # This is the function we want to extend
 import Base.show
 
-if VERSION <= v"0.6.9"
-	using Compat
-	import Base.round
-	round(n; digits=0) = round(n, digits)
-end
-
 
 function +(x::Base.GC_Diff, y::Base.GC_Diff)
 	return Base.GC_Diff(
