@@ -35,7 +35,8 @@ Load the module:
     using TwoFAST
 ```
 
-For both minimal examples we need a power spectrum. Get it like so:
+For both minimal examples we need a power spectrum. For example, we can use the
+one in the `test/` subdirectory of this project:
 
 ```julia
     using Dierckx
@@ -65,12 +66,12 @@ To calculate the real-space correlation function, use
 To calculate the integrals over two spherical Bessel functions, we first
 calculate the Fourier kernels at the highest needed ℓ. This is done with the
 structure `F21EllCache`. Then, we generate the full *Mll*-cache for each ℓ.
-This will automatically store the result in a file, and all related info will
-be stored in the structure `MlCache`. Finally, to actually calculate the
-*wljj*-terms we call the function `calcwljj()`. However, to store the
-*wljj*-terms, we need to create the output arrays, and write a function,
-`outfunc()`, that will store them in the arrays. The function `outfunc()` will
-be called for each ℓ in the array `ell`. Here's an example:
+This will automatically store the result in the file `out/MlCache/MlCache.bin`,
+and all related info will be stored in the structure `MlCache`. Finally, to
+actually calculate the *wljj*-terms we call the function `calcwljj()`. However,
+to store the *wljj*-terms, we need to create the output arrays, and write a
+function, `outfunc()`, that will store them in the arrays. The function
+`outfunc()` will be called for each ℓ in the array `ell`. Here's an example:
 
 ```julia
     N = 4096
