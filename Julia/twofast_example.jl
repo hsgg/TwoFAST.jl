@@ -9,7 +9,7 @@ using DelimitedFiles
 
 
 # one spherical bessel:
-function xiln(pk; N=1024, fname="xi.tsv")
+function xiln(pk; N=1024, fname="out/xi.tsv")
 	kmax = 1e3
 	kmin=1e-5
 	r0 = 1e-3
