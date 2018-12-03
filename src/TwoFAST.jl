@@ -1503,7 +1503,7 @@ function calcMljj(RR;
 	llen = length(ellenlarged)
 	timing = time()
 	@time for ellnow in ellmax:-1:minimum(ellenlarged)
-		println("ellnow: $ellnow")
+		#println("ellnow: $ellnow")
 		if ellnow == ellenlarged[llen]
 			print("ell $ellnow, ")
 			println("elapsed: ", time() - timing)
