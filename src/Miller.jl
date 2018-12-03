@@ -9,82 +9,82 @@ import Base.floatmin
 floatmin(arr) = floatmin(typeof(real(arr[1])))
 
 
-# find_nseedmin():
-#   This function finds an 'n' s.t. the approximatio n -> infty is valid.
-#   We do this by testing that the eigenvalues are close to each other.
-#   Specifically, we ensure that the eigenvalues are within an annulus in the
-#   complex plane, where the radius of the annulus has a radius 'fracdist'
-#   times the distance between the eigenvectors at infinity.
-function find_nseedmin(laminf1, laminf2, BCfn; fracdist=1/2.1)
-    rmax = fracdist * abs(laminf1 - laminf2)
-    #println("laminf: $laminf1\t$laminf2")
-    #println("rmax: $rmax")
-
-    # test whether we are in the 'n->infty' limit:
-    wearedone(n) = begin
-        B, C, D, E = BCfn(n)
-        lam1, lam2 = eigvals([B C; D E])
-        #println("$n: $lam1\t$lam2")
-        if abs(lam1 - laminf1) < rmax && abs(lam2 - laminf2) < rmax
-            return true
-        elseif abs(lam2 - laminf1) < rmax && abs(lam1 - laminf2) < rmax
-            return true
-        end
-        return false
-    end
-
-    # increase 'n' until we reach a satisfactory point:
-    n = 0
-    while !wearedone(n)
-        n = max(1, ceil(Int, 1.1n))
-    end
-    return n
-end
-
-
-# find_nseedmin():
-#   This function finds a minimum nseed s.t. an error of order 1e16 dies out
-#   when reaching 'nmax'.
-function find_nseedmin2(nmax, BCfn)
-    nseed = nmax
-    r = 1.0
-    while r > 1e-10
-        nseed += 1
-        B, C, D, E = BCfn(nseed)
-        lam1, lam2 = eigvals([B C; D E])
-        #println("$nseed($r): $lam1\t$lam2")
-        al1 = abs(lam1)
-        al2 = abs(lam2)
-        if al1 > al2
-            r *= al2 / al1
-        else
-            r *= al1 / al2
-        end
-    end
-    return nseed
-end
-
-
-# estimate_prec_loss():
-#   This function estimates the loss of precision by multiplying the ratio of
-#   eigenvalues.
-function estimate_prec_loss(nmax, BCfn)
-    r = 1.0
-    while nmax > 0
-        B, C, D, E = BCfn(nmax)
-        lam1, lam2 = eigvals([B C; D E])
-        #println("$nseed($r): $lam1\t$lam2")
-        al1 = abs(lam1)
-        al2 = abs(lam2)
-        if al1 > al2
-            r *= al2 / al1
-        else
-            r *= al1 / al2
-        end
-        nmax -= 1
-    end
-    return r
-end
+## find_nseedmin():
+##   This function finds an 'n' s.t. the approximatio n -> infty is valid.
+##   We do this by testing that the eigenvalues are close to each other.
+##   Specifically, we ensure that the eigenvalues are within an annulus in the
+##   complex plane, where the radius of the annulus has a radius 'fracdist'
+##   times the distance between the eigenvectors at infinity.
+#function find_nseedmin(laminf1, laminf2, BCfn; fracdist=1/2.1)
+#    rmax = fracdist * abs(laminf1 - laminf2)
+#    #println("laminf: $laminf1\t$laminf2")
+#    #println("rmax: $rmax")
+#
+#    # test whether we are in the 'n->infty' limit:
+#    wearedone(n) = begin
+#        B, C, D, E = BCfn(n)
+#        lam1, lam2 = eigvals([B C; D E])
+#        #println("$n: $lam1\t$lam2")
+#        if abs(lam1 - laminf1) < rmax && abs(lam2 - laminf2) < rmax
+#            return true
+#        elseif abs(lam2 - laminf1) < rmax && abs(lam1 - laminf2) < rmax
+#            return true
+#        end
+#        return false
+#    end
+#
+#    # increase 'n' until we reach a satisfactory point:
+#    n = 0
+#    while !wearedone(n)
+#        n = max(1, ceil(Int, 1.1n))
+#    end
+#    return n
+#end
+#
+#
+## find_nseedmin():
+##   This function finds a minimum nseed s.t. an error of order 1e16 dies out
+##   when reaching 'nmax'.
+#function find_nseedmin2(nmax, BCfn)
+#    nseed = nmax
+#    r = 1.0
+#    while r > 1e-10
+#        nseed += 1
+#        B, C, D, E = BCfn(nseed)
+#        lam1, lam2 = eigvals([B C; D E])
+#        #println("$nseed($r): $lam1\t$lam2")
+#        al1 = abs(lam1)
+#        al2 = abs(lam2)
+#        if al1 > al2
+#            r *= al2 / al1
+#        else
+#            r *= al1 / al2
+#        end
+#    end
+#    return nseed
+#end
+#
+#
+## estimate_prec_loss():
+##   This function estimates the loss of precision by multiplying the ratio of
+##   eigenvalues.
+#function estimate_prec_loss(nmax, BCfn)
+#    r = 1.0
+#    while nmax > 0
+#        B, C, D, E = BCfn(nmax)
+#        lam1, lam2 = eigvals([B C; D E])
+#        #println("$nseed($r): $lam1\t$lam2")
+#        al1 = abs(lam1)
+#        al2 = abs(lam2)
+#        if al1 > al2
+#            r *= al2 / al1
+#        else
+#            r *= al1 / al2
+#        end
+#        nmax -= 1
+#    end
+#    return r
+#end
 
 
 # get_ndiffmin():
