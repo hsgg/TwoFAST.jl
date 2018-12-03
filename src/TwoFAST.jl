@@ -2,6 +2,7 @@ module TwoFAST
 
 export xicalc
 export F21EllCache, make_fell_lmax_cache
+export MlCache
 export calcMljj
 export calcwljj
 
@@ -1256,6 +1257,115 @@ end
 function read_Mlcache_record!(f, Mell)
 	@assert typeof(Mell) == Array{ComplexF64,2}
 	read!(f, Mell)
+end
+
+
+############### nicer MlCache ##########################
+
+function thin_rr(rr, rmin, rmax, Δrmin)
+    rridx = fill(false, length(rr))
+    ilast = -1
+    firstin = true
+    firstout = true
+    for i=length(rr):-1:1
+        if rmin <= rr[i] <= rmax
+            if firstin
+                if i < length(rr)
+                    rridx[i+1] = true
+                end
+                rridx[i] = true
+                ilast = i
+                firstin = false
+            else
+                Δr = abs(rr[i] - rr[ilast])
+                if Δr >= Δrmin
+                    rridx[i] = true
+                    ilast = i
+                end
+            end
+        elseif firstout && rr[i] < rmin
+            rridx[i] = true
+            firstout = false
+        end
+    end
+    return rridx
+end
+
+
+function bools2idxs(bools)
+    idxs = Int[]
+    for i=1:length(bools)
+        if bools[i]
+            push!(idxs, i)
+        end
+    end
+    return idxs
+end
+
+
+struct MlCache
+    dir::AbstractString
+    f21ellcache_dir::AbstractString
+    MlCache_file::AbstractString
+    rr_file::AbstractString
+    RR_file::AbstractString
+    ℓℓ_file::AbstractString
+    rr_thinning_rmin::Float64
+    rr_thinning_rmax::Float64
+    rr_thinning_Δrmax::Float64
+end
+
+
+function MlCache(ell, f21ellcache_dir::AbstractString, dir="cache/MlCache";
+                 rr_thinning=(-Inf, Inf, 0.0))
+    mkpath(dir)
+    MlCache_file = "$dir/Mlcache.bin"
+    rr_file = "$dir/rr.tsv"
+    RR_file = "$dir/RRatio.tsv"  # macosx is by default case-insensitive, so give it a distinct name
+    ℓℓ_file = "$dir/ell.tsv"
+
+    f21ellcache = F21EllCache(f21ellcache_dir)
+    RR = f21ellcache.RR
+    kmin = f21ellcache.kmin
+    kmax = f21ellcache.kmax
+    N = f21ellcache.N
+    chi0 = f21ellcache.χ0
+    q = f21ellcache.q
+
+    # calculate all M_ll, result gets saved to a file:
+    tt = calcMljj(RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q,
+                  fell_lmax_file=f21ellcache_dir, outfile=MlCache_file)
+
+    # get rr and ridxs
+    χχ = calcwljj(k->1.0, RR; ell=[-1], kmin=kmin, kmax=kmax, N=N, r0=chi0,
+		  q=q, cachefile=MlCache_file)
+    ridxs = bools2idxs(thin_rr(χχ, rr_thinning...))
+    rr = χχ[ridxs]
+
+    writedlm(rr_file, [rr ridxs])
+    writedlm(RR_file, RR)
+    writedlm(ℓℓ_file, ell)
+
+    MlCache(dir, f21ellcache_dir, MlCache_file, rr_file, RR_file, ℓℓ_file,
+            rr_thinning...)
+end
+
+
+function write(dname::AbstractString, t::MlCache)
+    s = ""
+    for n in fieldnames(MlCache)
+        s *= "$(string(n)) = $(getfield(t, n))\n"
+    end
+    write("$dname/MlCache.dat", s)
+end
+
+
+function MlCache(dir::AbstractString)
+    fname = "$dir/MlCache.dat"
+    values = struct_read_fieldnames(fname, MlCache; remove_comment_leader=false)
+    names = fieldnames(MlCache)
+    vals = [values[n] for n in names]
+    MlCache(vals...)
 end
 
 

@@ -136,14 +136,21 @@ function test_wl_ℓRR(ℓ)
 end
 
 
-########################## test F21EllCache ######################
+########################## test F21EllCache, MlCache ######################
 function test_F21EllCache()
+    # calc initial Ml cache at high ell
     RR = collect(0.6:0.1:1.1)
-    @show RR .- 1
-    cache = TwoFAST.F21EllCache(1200, RR)
+    cache = F21EllCache(1200, RR)
     write("out/f21ellcache", cache)
-    cache2 = TwoFAST.F21EllCache("out/f21ellcache")
-    # ... at least it compiles ...
+    cache2 = F21EllCache("out/f21ellcache")
+
+    # calc full MlCache
+    ell = 10:10:1200
+    mlcache = MlCache(ell, "out/F21EllCache", "out/MlCache")
+    write("out/MlCache", mlcache)
+    mlcache = MlCache("out/MlCache")
+
+    # ... at least a compile test ...
 end
 
 
