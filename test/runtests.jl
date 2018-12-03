@@ -136,8 +136,8 @@ function test_wl_ℓRR(ℓ)
 end
 
 
-########################## test F21EllCache, MlCache ######################
-function test_F21EllCache()
+########################## test cache ######################
+function test_cache()
     # calc initial Ml cache at high ell
     RR = collect(0.6:0.1:1.1)
     cache = F21EllCache(1200, RR)
@@ -178,6 +178,8 @@ TestTwoFAST.test_wl_χ2303_R(0.1, 1e-11)
 TestTwoFAST.test_wl_ℓRR(42)
 TestTwoFAST.test_wl_ℓRR(100)
 
-TestTwoFAST.test_F21EllCache()
+TestTwoFAST.test_cache()
+
+include("../Julia/twofast_example.jl")
 
 # vim: set sw=4 et sts=4 :

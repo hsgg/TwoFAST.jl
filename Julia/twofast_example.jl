@@ -5,6 +5,7 @@ using TwoFAST
 
 # for Spline1D (add it with Pkg.add("Dierckx")):
 using Dierckx
+using DelimitedFiles
 
 
 # one spherical bessel:
@@ -35,14 +36,16 @@ function wlrr(pk)
 	RR = [0.6, 0.7, 0.8, 0.9, 0.998, 1.0]
 
 	# calculate M_ll at high ell:
-	make_fell_lmax_cache(RR, maximum(ell); N=N, q=q, G=log(kmax / kmin), k0=kmin, r0=chi0)
+	f21cache = F21EllCache(maximum(ell), RR, N; q=q, kmin=kmin, kmax=kmax,
+			       χ0=chi0)
+	write("out/F21EllCache", f21cache)
 
 	# calculate all M_ll:
-	tt = calcMljj(RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q)
+	mlcache = MlCache(ell, "out/F21EllCache", "out/MlCache")
 
 	# store result here:
-	w00 = Array{Float64}(N, length(RR))
-	w02 = Array{Float64}(N, length(RR))
+	w00 = Array{Float64}(undef, N, length(RR))
+	w02 = Array{Float64}(undef, N, length(RR))
 	function outfunc(wjj, ell, rr, RR)
 		if ell == 42
 			w00[:,:] = wjj[1]
@@ -50,16 +53,16 @@ function wlrr(pk)
 		end
 	end
 	rr = calcwljj(pk, RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q,
-		outfunc=outfunc)
-	writedlm("wl42_jj00.tsv", [rr w00])
-	writedlm("wl42_jj02.tsv", [rr w02])
-	println("Created 'wl42_jj00.tsv'.")
-	println("Created 'wl42_jj02.tsv'.")
+		outfunc=outfunc, cachefile="out/MlCache/MlCache.bin")
+	writedlm("out/wl42_jj00.tsv", [rr w00])
+	writedlm("out/wl42_jj02.tsv", [rr w02])
+	println("Created 'out/wl42_jj00.tsv'.")
+	println("Created 'out/wl42_jj02.tsv'.")
 end
 
 
 function main()
-	d = readdlm("../test/data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
+	d = readdlm((@__DIR__)*"/../test/data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat", comments=true)
 	pk = Spline1D(d[:,1], d[:,2])
 
 	# one spherical bessel function:
