@@ -1226,7 +1226,7 @@ end
 ############### Ml-cache ##########################
 
 const magic_number = 0x782aa138291e1800
-function write_Mlcache_header(fname, Mell, RR, ell)
+function write_MlCache_header(fname, Mell, RR, ell)
 	@assert typeof(Mell) == Array{ComplexF64,3}
 	f = open(fname, "w")
 	write(f, Int64(magic_number))
@@ -1239,12 +1239,12 @@ function write_Mlcache_header(fname, Mell, RR, ell)
 	return f
 end
 
-function write_Mlcache_record(f, Mell)
+function write_MlCache_record(f, Mell)
 	@assert typeof(Mell) == Array{ComplexF64,3}
 	write(f, Mell)
 end
 
-function read_Mlcache_header(fname="Ml21-cache.bin")
+function read_MlCache_header(fname="Ml21-cache.bin")
 	f = open(fname, "r")
 	magic, lenmm, lenRR, lenjj, lenell = read!(f, Array{Int64}(undef, 5))
 	@assert magic == magic_number
@@ -1254,7 +1254,7 @@ function read_Mlcache_header(fname="Ml21-cache.bin")
 	return f, Mlsize, ell, RR
 end
 
-function read_Mlcache_record!(f, Mell)
+function read_MlCache_record!(f, Mell)
 	@assert typeof(Mell) == Array{ComplexF64,2}
 	read!(f, Mell)
 end
@@ -1319,7 +1319,7 @@ end
 function MlCache(ell, f21ellcache_dir::AbstractString, dir="cache/MlCache";
                  rr_thinning=(-Inf, Inf, 0.0))
     mkpath(dir)
-    MlCache_file = "$dir/Mlcache.bin"
+    MlCache_file = "$dir/MlCache.bin"
     rr_file = "$dir/rr.tsv"
     RR_file = "$dir/RRatio.tsv"  # macosx is by default case-insensitive, so give it a distinct name
     ℓℓ_file = "$dir/ell.tsv"
@@ -1469,7 +1469,7 @@ function calcMljj(RR;
 	println("Output size: $(Mellsize) bytes = $(Mellsize/2^30) GiB")
 	println("Output size: $(sizeof(wjj)) bytes = $(sizeof(wjj)/2^30) GiB")
 	#Mell32[:] = 0.0  # for testing
-	f = write_Mlcache_header(outfile, wjj, RR, ell)
+	f = write_MlCache_header(outfile, wjj, RR, ell)
 
 	print("Reading '$fell_lmax_file'... ")
 	@time fell, flmax, mm, RRcache, lmaxcache = read_fell_lmax(fell_lmax_file)
@@ -1519,7 +1519,7 @@ function calcMljj(RR;
 			# now we have everything together to calculate for ell=ellnow+jmax
 			tcalcwljj += @timed wljj_from_wldl!(wtRdll[-2], wtRdll[0], wtRdll[2],
 				ellnow + jmax, wjj)
-			twrite += @timed write_Mlcache_record(f, wjj)
+			twrite += @timed write_MlCache_record(f, wjj)
 			ll -= 1
 		end
 
@@ -1600,7 +1600,7 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 	w20 = Array{Float64}(undef, Nrr, length(RR))
 	w22 = Array{Float64}(undef, Nrr, length(RR))
 
-	tread = @timed f, Mlsize, ellcache, RRcache = read_Mlcache_header(cachefile)
+	tread = @timed f, Mlsize, ellcache, RRcache = read_MlCache_header(cachefile)
 	@assert Mlsize[1] == size(wt00,1)
 	@assert Mlsize[2] == size(wt00,2)
 	@assert Mlsize[3] == 4
@@ -1618,10 +1618,10 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 	@time for ll in ellcache
 		#tic()
 		tread += @timed begin
-			read_Mlcache_record!(f, wt00)
-			read_Mlcache_record!(f, wt02)
-			read_Mlcache_record!(f, wt20)
-			read_Mlcache_record!(f, wt22)
+			read_MlCache_record!(f, wt00)
+			read_MlCache_record!(f, wt02)
+			read_MlCache_record!(f, wt20)
+			read_MlCache_record!(f, wt22)
 		end
 		tmultphi += @timed begin
 			mymult!(wt00, phi, lenRR)
