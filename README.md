@@ -39,7 +39,11 @@ For both minimal examples we need a power spectrum. Get it like so:
 
 ```julia
     using Dierckx
-    d = readdlm("test/data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat")
+    using DelimitedFiles
+    path = homedir() * "/.julia/packages/TwoFAST/"
+    path *= readdir(path)[1]
+    path *= "/test/data/planck_base_plikHM_TTTEEE_lowTEB_lensing_post_BAO_H070p6_JLA_matterpower.dat"
+    d = readdlm(path, comments=true)
     pk = Spline1D(d[:,1], d[:,2])
 ```
 
