@@ -14,7 +14,7 @@ using DelimitedFiles
 
 function test_calc_f0()
     ℓ = 10_000
-    R = 0.8
+    R = 0.9
     Δℓ = 4
     kmin = 1e-5
     χ0 = 1e-3
@@ -64,7 +64,7 @@ end
 
 function test_calc_f21_RqmG()
     ℓ = 10_000
-    R = 0.8
+    R = 0.9
     Δℓ = 4
     kmin = 1e-5
     χ0 = 1e-3
