@@ -2,8 +2,7 @@ module TwoFAST
 
 export xicalc
 export F21EllCache, make_fell_lmax_cache
-export MlCache
-export calcMljj
+export MlCache, calcMljj
 export calcwljj
 
 
@@ -1333,6 +1332,7 @@ function MlCache(ell, f21ellcache_dir::AbstractString, dir="cache/MlCache";
     q = f21ellcache.q
 
     # calculate all M_ll, result gets saved to a file:
+    ell = unique(sort(ell))
     tt = calcMljj(RR; ell=ell, kmin=kmin, kmax=kmax, N=N, r0=chi0, q=q,
                   fell_lmax_file=f21ellcache_dir, outfile=MlCache_file)
 
