@@ -1611,11 +1611,22 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 	lenRR = length(RR)
 	toutfunc = @timed Nothing
 
+	tskip = @timed Nothing
 	tmultphi = @timed Nothing
 	tbrfft = @timed Nothing
 	tmultprefac = @timed Nothing
 
 	@time for ll in ellcache
+		tskip += @timed begin
+			if ll ∉ ell
+				# skip ahead in 'f'
+				skip(f, sizeof(wt00))
+				skip(f, sizeof(wt02))
+				skip(f, sizeof(wt20))
+				skip(f, sizeof(wt22))
+				continue
+			end
+		end
 		#tic()
 		tread += @timed begin
 			read_MlCache_record!(f, wt00)
@@ -1654,6 +1665,7 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 		#toc()
 	end
 
+	println("tskip:       ", tskip)
 	println("tread:       ", tread)
 	println("tmultphi:    ", tmultphi)
 	println("tbrfft:      ", tbrfft)
