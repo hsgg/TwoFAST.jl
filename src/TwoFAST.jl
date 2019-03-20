@@ -1641,16 +1641,10 @@ function calcwljj(pkfn, RR; ell=42:42, kmin=1e-4, kmax=1e4, r0=1.0, N=1024, q=1.
 			mymult!(wt22, phi, lenRR)
 		end
 		tbrfft += @timed begin
-			false && if ll==1000
-				println("wt00[23,1] = ", wt00[23,1])
-			end
 			brfft_exec!(wr00, wt00, brfft_plan, lenRR)
 			brfft_exec!(wr02, wt02, brfft_plan, lenRR)
 			brfft_exec!(wr20, wt20, brfft_plan, lenRR)
 			brfft_exec!(wr22, wt22, brfft_plan, lenRR)
-			false && if ll==1000
-				println("wr00[640,1] = ", wr00[640,1])
-			end
 		end
 		tmultprefac += @timed begin
 			mymult_A_B_x!(w00, wr00, prefac, ridxs, lenRR)
