@@ -1193,9 +1193,10 @@ function F21EllCache(dname::AbstractString)
 	values = struct_read_fieldnames(fname, F21EllCache; remove_comment_leader=false)
 
 	# read arrays
-	values[:RR] = "$dname/$(values[:RR])"
-	values[:ℓmax] = "$dname/$(values[:ℓmax])"
-	values[:f21] = "$dname/$(values[:f21])"
+	# check absolute paths for backward compatibility
+	(values[:RR][1] != '/') && (values[:RR] = "$dname/$(values[:RR])")
+	(values[:ℓmax][1] != '/') && (values[:ℓmax] = "$dname/$(values[:ℓmax])")
+	(values[:f21][1] != '/') && (values[:f21] = "$dname/$(values[:f21])")
 	N2 = div(values[:N], 2) + 1
 	values[:RR] = readdlm(values[:RR])[:]
 	lenRR = length(values[:RR])
@@ -1373,7 +1374,9 @@ function MlCache(dir::AbstractString)
     for n in names
         t = fieldtype(MlCache, n)
         if t <: AbstractString
-            values[n] = realpath("$dir/$(values[n])")
+            if values[n][1] != '/'  # backwards compatibility
+                values[n] = realpath("$dir/$(values[n])")
+            end
         end
     end
     vals = [values[n] for n in names]
