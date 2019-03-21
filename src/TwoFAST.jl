@@ -1166,8 +1166,7 @@ end
 function write(dname::AbstractString, t::F21EllCache)
 	mkpath(dname)
 	s = ""
-	names = fieldnames(typeof(t))
-	for n in names
+	for n in fieldnames(typeof(t))
 		field = getfield(t, n)
 		if typeof(field) <: AbstractArray
 			if n == :RR
@@ -1177,7 +1176,7 @@ function write(dname::AbstractString, t::F21EllCache)
 				ftmp = "$dname/$(string(n)).bin"
 				write(ftmp, field)
 			end
-			field = ftmp
+			field = relpath(ftmp, dname)
 		end
 		ln = "$(string(n)) = $field\n"
 		print(ln)
@@ -1194,6 +1193,9 @@ function F21EllCache(dname::AbstractString)
 	values = struct_read_fieldnames(fname, F21EllCache; remove_comment_leader=false)
 
 	# read arrays
+	values[:RR] = "$dname/$(values[:RR])"
+	values[:ℓmax] = "$dname/$(values[:ℓmax])"
+	values[:f21] = "$dname/$(values[:f21])"
 	N2 = div(values[:N], 2) + 1
 	values[:RR] = readdlm(values[:RR])[:]
 	lenRR = length(values[:RR])
@@ -1354,7 +1356,11 @@ end
 function write(dname::AbstractString, t::MlCache)
     s = ""
     for n in fieldnames(MlCache)
-        s *= "$(string(n)) = $(getfield(t, n))\n"
+        v = getfield(t, n)
+	if typeof(v) <: AbstractString
+            v = relpath(v, dname)
+	end
+        s *= "$(string(n)) = $v\n"
     end
     write("$dname/MlCache.dat", s)
 end
@@ -1364,6 +1370,12 @@ function MlCache(dir::AbstractString)
     fname = "$dir/MlCache.dat"
     values = struct_read_fieldnames(fname, MlCache; remove_comment_leader=false)
     names = fieldnames(MlCache)
+    for n in names
+        t = fieldtype(MlCache, n)
+        if t <: AbstractString
+            values[n] = realpath("$dir/$(values[n])")
+        end
+    end
     vals = [values[n] for n in names]
     MlCache(vals...)
 end
