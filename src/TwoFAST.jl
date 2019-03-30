@@ -18,6 +18,7 @@ using IncGammaBeta
 using LinearAlgebra
 using SpecialFunctions
 using DelimitedFiles
+using Logging
 #using SphBes
 
 import Base.write
@@ -110,7 +111,7 @@ function calc_qbest(ell, nu; n1=0.9, n2=0.9999)
 
 	q = qbest
 	if !(qmin < q < qmax)
-		#warn("Need suboptimal choice of q!")
+		#@warn "Need suboptimal choice of q!"
         	q = (qmin + 2qmax) / 3
 	end
 
@@ -399,13 +400,13 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 		f21 = calc_f0(R, n, dl)
 		f0 = B0 * f21
 		if !all(isfinite.(f0)) && n != 0 && R != 1
-			warn("R: $R")
-			warn("n: $n")
-			warn("dl: $dl")
-			warn("alpha: $alpha")
-			warn("B0:  $B0")
-			warn("f21: $f21")
-			warn("f0:  $f0")
+			@warn "R: $R"
+			@warn "n: $n"
+			@warn "dl: $dl"
+			@warn "alpha: $alpha"
+			@warn "B0:  $B0"
+			@warn "f21: $f21"
+			@warn "f0:  $f0"
 			error("Matchpoint could not be calculated")
 		end
 		laminf1 = R
@@ -422,15 +423,15 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 	end
 
 	if !all(isfinite.(fell))
-		warn("R: $R")
-		warn("n: $n")
-		warn("dl: $dl")
-		warn("alpha: $alpha")
-		warn("B0:  $B0")
-		warn("f21: $f21")
-		warn("f0:  $f0")
-		warn("fell: $fell")
-		warn("ell:  $ell")
+		@warn "R: $R"
+		@warn "n: $n"
+		@warn "dl: $dl"
+		@warn "alpha: $alpha"
+		@warn "B0:  $B0"
+		@warn "f21: $f21"
+		@warn "f0:  $f0"
+		@warn "fell: $fell"
+		@warn "ell:  $ell"
 		error("Mll could not be calculated")
 	end
 	#println("fell: $fell")
