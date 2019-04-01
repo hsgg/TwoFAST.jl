@@ -191,13 +191,7 @@ function calc_fmax_fn(nmax, BCfn, f0::T, fasymp::T, ndiffmin, nminseed;
         end
     end
     if i == 0 && rdiff > fmax_tol
-        @warn "nmax:  $nmax"
-        @warn "nseed: $nseed"
-        @warn "f0: $f0"
-        @warn "fmax_tol: $fmax_tol"
-        @warn "rdiff: $rdiff"
-        @warn "imax,i: $imax,$i"
-        @warn "Maximum iterations reached!"
+        @warn "Maximum iterations reached!" nmax nseed f0 fmax_tol rdiff imax i
     end
     return fmax
 end
@@ -221,12 +215,7 @@ function calc_underflow_fmax(nmax, calc_f)
         nmid = div(nmin + nmax, 2)
     end
     if all(isfinite.(fmax)) && maximum(abs.(fmax)) > 1e-100
-        @warn "nmax=$nmax"
-        @warn "calc_f=$calc_f"
-        @warn "nmin=$nmin, nmax=$nmax"
-        @warn "fmax = $fmax"
-        @warn "abs(fmax) = $(abs.(fmax))"
-        @warn "Assumption may be violated: Result is not close to zero"
+        @warn "Assumption may be violated: Result is not close to zero" calc_f nmin nmax fmax abs.(fmax)
         return Array{ComplexF64}([NaN, NaN]), nmin
     end
     return fmax, nmin
@@ -264,16 +253,7 @@ function miller(n, BCfn::Function, f0::T, fasymp::T, laminf1, laminf2;
     fn3, n3 = calc_underflow_fmax(n, calc_f)
     all(isfinite.(fn3)) && return fn3, n3
 
-    @warn "ERROR at n=$n"
-    @warn "n3: $n3"
-    @warn "ndiffmin: $ndiffmin"
-    @warn "BCfn: $BCfn"
-    @warn "f0:  $f0"
-    @warn "fn1: $fn1"
-    @warn "fn2: $fn2"
-    @warn "fn3: $fn3"
-    @warn "fasymp: $fasymp"
-    @warn "Initial value could not be calculated!"
+    @warn "Initial value could not be calculated!" n n3 ndiffmin BCfn f0 fn1 fn2 fn3 fasymp
     return f0, 0
 end
 

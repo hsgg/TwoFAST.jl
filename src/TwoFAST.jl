@@ -111,7 +111,7 @@ function calc_qbest(ell, nu; n1=0.9, n2=0.9999)
 
 	q = qbest
 	if !(qmin < q < qmax)
-		#@warn "Need suboptimal choice of q!"
+		#@warn "Need suboptimal choice of q!" qmin qmax qbest
         	q = (qmin + 2qmax) / 3
 	end
 
@@ -142,7 +142,7 @@ function xicalc(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000,
 		#println("  qmax:  $qmax")
 		#println("  (ell,nu) = ($ell,$nu), qnu=$qnu")
 		if qmin > qmax
-		    error("Integral does not converge!")
+		    @error "Integral does not converge!" qmin qmax qbest qnu
 		end
 	end
 
@@ -275,7 +275,7 @@ function calc_f000_fm1m1m2_ell0_dl0m1(R::T, n::Complex{T}, dl::Integer) where T
 		f000 = f000fnb(1-n)
 		fm1m1m2 = fm1m1m2fnb(1-n)
 	else
-		error("dl=$dl not implemented, R=$R, n=$n")
+		@error "dl=$dl not implemented" R n
 	end
 	return [fm1m1m2, f000]
 end
@@ -400,14 +400,7 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 		f21 = calc_f0(R, n, dl)
 		f0 = B0 * f21
 		if !all(isfinite.(f0)) && n != 0 && R != 1
-			@warn "R: $R"
-			@warn "n: $n"
-			@warn "dl: $dl"
-			@warn "alpha: $alpha"
-			@warn "B0:  $B0"
-			@warn "f21: $f21"
-			@warn "f0:  $f0"
-			error("Matchpoint could not be calculated")
+			@error "Matchpoint could not be calculated" R n dl alpha B0 f21 f0
 		end
 		laminf1 = R
 		laminf2 = 1 / R
@@ -423,16 +416,7 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 	end
 
 	if !all(isfinite.(fell))
-		@warn "R: $R"
-		@warn "n: $n"
-		@warn "dl: $dl"
-		@warn "alpha: $alpha"
-		@warn "B0:  $B0"
-		@warn "f21: $f21"
-		@warn "f0:  $f0"
-		@warn "fell: $fell"
-		@warn "ell:  $ell"
-		error("Mll could not be calculated")
+		@error "Mll could not be calculated" R n dl alpha B0 f21 f0 fell ell
 	end
 	#println("fell: $fell")
 	#println("ell: $ell")
@@ -499,12 +483,7 @@ function stepback!(RR, ell, Am, dlrec, hypAB, lmax)
 			hypAB[1,i,j] = coRb * F000
 			hypAB[2,i,j] = coRb * F010
 			if !isfinite(F000) || !isfinite(F010)
-				println("$ell: $i,$j: Fold $F011, $F021")
-				println("$ell: $i,$j: Fnew $F000, $F010")
-				println("$ell: $i,$j: R=$(RR[j])")
-				println("$ell: dlrec=$dlrec")
-				println("$ell: $i,$j: a=$a, b=$b, c=$c")
-				error("Hypergeometric functions could not be calculated!")
+				@error "Hypergeometric functions could not be calculated!" ell i,j F011,F021 F000,F010 RR[j] dlrec a b c
 			end
 		end
 	end
@@ -547,12 +526,7 @@ function stepbackRg1!(RR, ell, Am, dlrec, hypAB, lmax)
 			hypAB[1,i,j] = coRb * F000
 			hypAB[2,i,j] = coRb * F010
 			if !isfinite(F000) || !isfinite(F010)
-				println("$ell: $i,$j: Fold $F011, $F021")
-				println("$ell: $i,$j: Fnew $F000, $F010")
-				println("$ell: $i,$j: R=$(RR[j])")
-				println("$ell: dlrec=$dlrec")
-				println("$ell: $i,$j: a=$a, b=$b, c=$c")
-				error("Hypergeometric functions could not be calculated!")
+				@error "Hypergeometric functions could not be calculated!" ell i,j F011,F021 F000,F010 RR[j] dlrec a b c
 			end
 		end
 	end
@@ -598,13 +572,7 @@ function calc_Mellell_lmax!(ell, fell, flmax, Mellell, Mellbp1)
 			Mellbp1[i,j] = fell[2,i,j]
 		end
 		if !isfinite(Mellell[i,j]) || !isfinite(Mellbp1[i,j])
-			println("ell=$ell")
-			println("flmax[$i,$j]=$(flmax[i,j])")
-			println("f000=$(fell[1,i,j])")
-			println("f010=$(fell[2,i,j])")
-			println("Mellell=$(Mellell[i,j])")
-			println("Mellbp1=$(Mellbp1[i,j])")
-			error("Mellell could not be calculated!")
+			@error "Mellell could not be calculated!" ell i,j flmax[i,j] fell[1,i,j] fell[2,i,j] Mellell[i,j] Mellbp1[i,j]
 		end
 	end
 end
@@ -955,7 +923,7 @@ function fsGkr(ell, s, G, kr, N, q)
 	f0 = fsGkrx(ell, s, G, kr, N, q, x0)
 	f1 = fsGkrx(ell, s, G, kr, N, q, x1)
 	if !isfinite(f0) || !isfinite(f1)
-		error("Infinities! f0=$f0, f1=$f1")
+		@error "Infinities!" f0 f1
 	end
 	return gam^q * (f1 - f0)
 end
