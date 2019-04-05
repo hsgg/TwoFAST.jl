@@ -1109,7 +1109,7 @@ function F21EllCache(ℓ::Int, RR, N=1600; q=1.1, kmin=1e-5, kmax=1e3, χ0=1e-3,
 	ℓmax = Array{Int64}(undef, length(mm), length(RR))
 	for j=1:length(RR)
 		R = RR[j]
-		print("  R=$R:\t")
+		print("  q=$q, R=$R:\t")
 		@time for i=1:length(mm)
 			m = mm[i]
 			Δℓr = R > 1 ? ΔℓRg1    : Δℓ
