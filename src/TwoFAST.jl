@@ -143,6 +143,7 @@ function xicalc(pkfn::T, ell=0, nu=0; kmin=1e-4, kmax=1e4, r0=1e-4, N=1000,
 		#println("  (ell,nu) = ($ell,$nu), qnu=$qnu")
 		if qmin > qmax
 		    @error "Integral does not converge!" qmin qmax qbest qnu
+		    @assert false
 		end
 	end
 
@@ -276,6 +277,7 @@ function calc_f000_fm1m1m2_ell0_dl0m1(R::T, n::Complex{T}, dl::Integer) where T
 		fm1m1m2 = fm1m1m2fnb(1-n)
 	else
 		@error "dl=$dl not implemented" R n
+		@assert false
 	end
 	return [fm1m1m2, f000]
 end
@@ -453,7 +455,7 @@ function stepback!(RR, ell, Am, dlrec, hypAB, lmax)
         cinv = 1 / c
 	for j=1:length(RR)
 		R = RR[j]
-                if R > 1
+                if R > 1  # R>1 has its own function
                     continue
                 end
 		z = R^2
@@ -484,6 +486,7 @@ function stepback!(RR, ell, Am, dlrec, hypAB, lmax)
 			hypAB[2,i,j] = coRb * F010
 			if !isfinite(F000) || !isfinite(F010)
 				@error "Hypergeometric functions could not be calculated!" ell i,j F011,F021 F000,F010 RR[j] dlrec a b c
+				@assert false
 			end
 		end
 	end
@@ -495,7 +498,7 @@ function stepbackRg1!(RR, ell, Am, dlrec, hypAB, lmax)
         c = ell + 1/2  # Eqs B10-B11 do ell+1->ell, hence c = (ell-1) + 3/2
         cinv = 1 / c
 	for j=1:length(RR)
-                if RR[j] <= 1
+                if RR[j] <= 1  # R<1 has its own function
                     continue
                 end
 		R = 1/RR[j]
@@ -527,6 +530,7 @@ function stepbackRg1!(RR, ell, Am, dlrec, hypAB, lmax)
 			hypAB[2,i,j] = coRb * F010
 			if !isfinite(F000) || !isfinite(F010)
 				@error "Hypergeometric functions could not be calculated!" ell i,j F011,F021 F000,F010 RR[j] dlrec a b c
+				@assert false
 			end
 		end
 	end
@@ -573,6 +577,7 @@ function calc_Mellell_lmax!(ell, fell, flmax, Mellell, Mellbp1)
 		end
 		if !isfinite(Mellell[i,j]) || !isfinite(Mellbp1[i,j])
 			@error "Mellell could not be calculated!" ell i,j flmax[i,j] fell[1,i,j] fell[2,i,j] Mellell[i,j] Mellbp1[i,j]
+			@assert false
 		end
 	end
 end
@@ -924,6 +929,7 @@ function fsGkr(ell, s, G, kr, N, q)
 	f1 = fsGkrx(ell, s, G, kr, N, q, x1)
 	if !isfinite(f0) || !isfinite(f1)
 		@error "Infinities!" f0 f1
+		@assert false
 	end
 	return gam^q * (f1 - f0)
 end
