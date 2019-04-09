@@ -346,10 +346,7 @@ function calc_Mll_unity(ell, n::Complex{T}, dl, alpha) where T
 	Uellell_pre = T(2)^(n-2) * pi
 	val_pre = alpha^(-n-1) * Uellell_pre
 	f000 = exp(lgamma(c-a-b) - lgamma(c-b) + lngr) * val_pre
-	f010 = exp(lgamma(c-a-b-1) - lgamma(c-b-1) + lngr) * val_pre
-        if 1 - a == -1 && c - a - b - 1 == 0  # infinities cancel, uh, oh...
-            f010 = 0.0 + 0.0im
-        end
+	f010 = Complex{T}(0)  # when R=1, then f010 does not enter the recursion relations
         #println("  a: $a")
         #println("  b: $b")
         #println("  c: $c")
@@ -403,6 +400,7 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 		f0 = B0 * f21
 		if !all(isfinite.(f0)) && n != 0 && R != 1
 			@error "Matchpoint could not be calculated" R n dl alpha B0 f21 f0
+			@assert false
 		end
 		laminf1 = R
 		laminf2 = 1 / R
