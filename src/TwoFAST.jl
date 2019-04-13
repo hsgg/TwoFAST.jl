@@ -24,6 +24,23 @@ using Logging
 import Base.write
 
 
+# Nemo
+module NemoHyp2F1
+export hyp2f1
+using Nemo
+CC = ComplexField(1024)
+toacb(x) = CC(real(x), imag(x))
+function hyp2f1(a::Number, b::Number, c::Number, z::Number)
+    #@show toacb(a) toacb(b) toacb(c) toacb(z)
+    res = Nemo.hyp2f1(toacb(a), toacb(b), toacb(c), toacb(z))
+    #@show res
+    return ComplexF64(Float64(real(res)), Float64(imag(res)))
+end
+end
+using .NemoHyp2F1
+
+
+
 ###################### muladd variants ##############################
 
 function muladd_a_b!(dest, b, scalar, src, a)
@@ -377,7 +394,8 @@ end
 
 
 function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
-		       G=log(1e4/1e-4), alpha=1e-4) where T
+		       G=log(1e4/1e-4), alpha=1e-4,
+		       allow_nemo=true) where {T<:Real}
 	t = 2 * T(pi) * m / G
 	n = q - 1 - im * t
 	a = n / 2 + dl / 2
@@ -389,12 +407,32 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 	if R == 0 && ell+dl != 0
 		return fnull, ell
 	elseif R == 1
+		#@show "R=1!"
 		calc_fmax_unity(ell) = calc_Mll_unity(ell, n, dl, alpha)
 		fell = calc_fmax_unity(ell)
 		if !all(isfinite.(fell)) || norm(fell) < Miller.floatmin(fell)
 			fell, ell = Miller.calc_underflow_fmax(ell, calc_fmax_unity)
 		end
+	elseif allow_nemo && R > 0.995
+		#@show "nemo!"
+		b = ell + 0.5 + a
+		c = ell + 1.5 + dl
+		z = R^2
+		Aelldl = alpha^(t*im-q) * 2^(n-2) * pi
+		Aelldl *= exp((ell+dl)*log(R) + lgamma(b) - lgamma(1-a)
+			      - lgamma(c))
+		f000 = hyp2f1(a, b, c, z)
+		f010 = hyp2f1(a, b+1, c, z)
+		m000 = Aelldl * f000
+		m010 = Aelldl * f010
+		fell = [m000, m010]
+		if !all(isfinite.(fell))
+			@error "Mll could not be calculated using Nemo" R n q t ell dl alpha Aelldl a b c z f000 f010 m000 m010
+			@assert false
+		end
+		@assert norm(fell) != 0  # since we don't try to find lmax
 	else
+		#@show "miller!"
 		B0 = Mellell_pre(0, 0+dl, R, n, alpha)
 		f21 = calc_f0(R, n, dl)
 		f0 = B0 * f21
@@ -413,11 +451,12 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 		#println("laminf1: $laminf1")
 		#println("laminf2: $laminf2")
 		fell, ell = miller(ell, BCfn, f0, fasymp, laminf1, laminf2)
+		if !all(isfinite.(fell))
+			@error "Mll could not be calculated" R n dl alpha B0 f21 f0 fell ell
+			@assert false
+		end
 	end
 
-	if !all(isfinite.(fell))
-		@error "Mll could not be calculated" R n dl alpha B0 f21 f0 fell ell
-	end
 	#println("fell: $fell")
 	#println("ell: $ell")
 	return fell, ell
