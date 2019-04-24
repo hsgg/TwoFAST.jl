@@ -413,7 +413,7 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 		if !all(isfinite.(fell)) || norm(fell) < Miller.floatmin(fell)
 			fell, ell = Miller.calc_underflow_fmax(ell, calc_fmax_unity)
 		end
-	elseif allow_nemo && R > 0.995
+	elseif allow_nemo && R > 0.99
 		#@show "nemo!"
 		b = ell + 0.5 + a
 		c = ell + 1.5 + dl
