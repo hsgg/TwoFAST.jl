@@ -110,8 +110,8 @@ end
 
 function make_Mellnu(tt, alpha, ell, nu; q=0)
 	n = @. q - nu - 1 - im*tt
-	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(lgamma((1 + ell + n) / 2)
-		- lgamma((2 + ell - n) / 2))
+	intjlttn = @. 2.0^(n-1) * sqrt(pi) * exp(loggamma((1 + ell + n) / 2)
+		- loggamma((2 + ell - n) / 2))
 	A = @. alpha^(im*tt - q + nu)
 	#println("n: $(n[1])")
 	#println("intjlttn: $(intjlttn[1])")
@@ -359,10 +359,10 @@ function calc_Mll_unity(ell, n::Complex{T}, dl, alpha) where T
 	b = ell + T(1)/2 + a
 	c = ell + dl + T(3)/2
 	# gamma(c) was cancelled
-	lngr = lgamma(b) - lgamma(1-a) - lgamma(c-a)
+	lngr = loggamma(b) - loggamma(1-a) - loggamma(c-a)
 	Uellell_pre = T(2)^(n-2) * pi
 	val_pre = alpha^(-n-1) * Uellell_pre
-	f000 = exp(lgamma(c-a-b) - lgamma(c-b) + lngr) * val_pre
+	f000 = exp(loggamma(c-a-b) - loggamma(c-b) + lngr) * val_pre
 	f010 = Complex{T}(0)  # when R=1, then f010 does not enter the recursion relations
         #println("  a: $a")
         #println("  b: $b")
@@ -419,8 +419,8 @@ function calc_2f1_RqmG(ell, R::T, dl::Integer; q=1.0, m::Int=500,
 		c = ell + 1.5 + dl
 		z = R^2
 		Aelldl = alpha^(t*im-q) * 2^(n-2) * pi
-		Aelldl *= exp((ell+dl)*log(R) + lgamma(b) - lgamma(1-a)
-			      - lgamma(c))
+		Aelldl *= exp((ell+dl)*log(R) + loggamma(b) - loggamma(1-a)
+			      - loggamma(c))
 		f000 = hyp2f1(a, b, c, z)
 		f010 = hyp2f1(a, b+1, c, z)
 		m000 = Aelldl * f000
@@ -581,7 +581,7 @@ function Mellell_pre(ell1, ell2, R::T, n, alpha::T) where T
 	b = (1 + ell1 + ell2 + n) / 2
 	c = ell2 + T(3) / 2
 	d = (2 + ell1 - ell2 - n) / 2
-	gr = exp(ell2 * log(R) + lgamma(b) - lgamma(d) - lgamma(c))
+	gr = exp(ell2 * log(R) + loggamma(b) - loggamma(d) - loggamma(c))
 	Uellell_pre = T(2)^(n-2) * pi * gr
 	val_pre = alpha^(-n-1) * Uellell_pre
 	#println("ell1=$ell1, ell2=$ell2, t=$t, R=$R, alpha=$alpha, q=$q")
@@ -935,7 +935,7 @@ end
 # calculate ln[(2n + 1)!!]
 function ldblfac_2xp1(n::Integer)
 	# 2n+1 is always odd!
-	return (n+1) * log(2) + lgamma(n + 1.5) - 0.5 * log(pi)
+	return (n+1) * log(2) + loggamma(n + 1.5) - 0.5 * log(pi)
 end
 
 
@@ -1032,11 +1032,11 @@ function estimate_roundofferror_wl(pkfn, ell::Int, dl::Int, chi::Float64, R::Flo
         alpha = k0 * chi0
         pk = pkfn(k)
 
-        lgams = (lgamma(2 - q)
-            + lgamma((ell1 + ell2 + q) / 2)
-            - lgamma((4 + ell1 + ell2 - q) / 2)
-            - lgamma((3 + ell1 - ell2 - q) / 2)
-            - lgamma((3 + ell2 - ell1 - q) / 2))
+        lgams = (loggamma(2 - q)
+            + loggamma((ell1 + ell2 + q) / 2)
+            - loggamma((4 + ell1 + ell2 - q) / 2)
+            - loggamma((3 + ell1 - ell2 - q) / 2)
+            - loggamma((3 + ell2 - ell1 - q) / 2))
         Mll = alpha^(-q) * 2.0^(q-3) * pi * exp(lgams)
 	k3qpk = (k / k0).^(3-q) .* pk
         L = 2pi * N / G
