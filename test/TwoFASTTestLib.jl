@@ -28,7 +28,7 @@ end
 
 function calc_2fast_xi(ℓ, νν)
     pk = PkSpectrum()
-    kwargs = Dict(:N => 1024, :kmin => 1e-6, :kmax => 1e2, :r0 => 1e-2)
+    kwargs = Dict(:N => 1024, :kmin => 1e-6, :kmax => 1e2, :r0 => 1e-4)
     r = xicalc(pk, 0, 0; kwargs...)[1]
     xi = [xicalc(pk, ℓ, ν; kwargs...)[2] for ν=νν]
     return r, xi

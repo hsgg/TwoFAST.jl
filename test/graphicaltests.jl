@@ -9,7 +9,8 @@ using PyCall
 using PyPlot
 using Dierckx
 using DelimitedFiles
-@pyimport matplotlib.gridspec as gridspec
+gridspec = pyimport("matplotlib.gridspec")
+#@pyimport matplotlib.gridspec as gridspec
 
 
 ########################### utilities #######################
@@ -23,17 +24,17 @@ function logplot(x, y; ax=gca(), kwargs...)
     l = ax.plot(x, y; kwargs...)
 
     kwargs = Dict{Symbol,Any}(kwargs)
-    kwargs[:color] = l[1].get_color()
-    kwargs[:alpha] = l[1].get_alpha()
-    kwargs[:linestyle] = l[1].get_linestyle()
+    kwargs.color = l[1].get_color()
+    kwargs.alpha = l[1].get_alpha()
+    kwargs.linestyle = l[1].get_linestyle()
     try delete!(kwargs, :label) catch end
     try delete!(kwargs, :ls) catch end
 
 
-    if kwargs[:linestyle] == "-"
-        kwargs[:linestyle] = "--"
-    elseif kwargs[:linestyle] == "--"
-        kwargs[:linestyle] = ":"
+    if kwargs.linestyle == "-"
+        kwargs.linestyle = "--"
+    elseif kwargs.linestyle == "--"
+        kwargs.linestyle = ":"
     end
 
     ax.plot(x, -y; kwargs...)
