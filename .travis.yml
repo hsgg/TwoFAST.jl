@@ -21,12 +21,12 @@ jobs:
     - julia: nightly
   fast_finish: true
   include:
-    - os: windows
-      arch: x86
-      julia: 1.0
-    - os: windows
-      arch: x86
-      julia: 1.2
+    # - os: windows
+    #   arch: x86
+    #   julia: 1.0
+    # - os: windows
+    #   arch: x86
+    #   julia: 1.2
     - os: windows
       arch: x86
       julia: nightly
