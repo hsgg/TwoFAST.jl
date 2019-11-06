@@ -10,7 +10,8 @@
 
 The 2-FAST (*2-point function from Fast and Accurate Spherical bessel
 Transform*) algorithm is implemented here in the [Julia](https://julialang.org)
-programming language.
+programming language. It computes integrals over one and two spherical Bessel
+functions as they frequently occur in cosmology.
 
 The algorithm is documented in the paper [Fast and Accurate Computation of
 Projected Two-point functions](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.97.023504),
