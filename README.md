@@ -13,7 +13,9 @@ Transform*) algorithm is implemented here in the [Julia](https://julialang.org)
 programming language.
 
 The algorithm is documented in the paper [Fast and Accurate Computation of
-Projected Two-point functions](https://arxiv.org/abs/1709.02401).
+Projected Two-point functions](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.97.023504),
+[arXiv link](https://arxiv.org/abs/1709.02401),
+[ADS link](https://ui.adsabs.harvard.edu/abs/2018PhRvD..97b3504G/abstract).
 
 To install in Julia-1.0, press `]` to enter package mode, and then
 
