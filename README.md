@@ -18,8 +18,7 @@ Projected Two-point functions](https://arxiv.org/abs/1709.02401).
 To install in Julia-1.0, press `]` to enter package mode, and then
 
 ```julia
-   (v1.0) pkg> add https://github.com/hsgg/IncGammaBeta.jl.git
-   (v1.0) pkg> add https://github.com/hsgg/TwoFAST.jl.git
+   pkg> add TwoFAST
 ```
 
 
