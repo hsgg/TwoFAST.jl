@@ -14,7 +14,7 @@ using .Miller
 
 # other packages
 using FFTW
-using IncGammaBeta
+#using IncGammaBeta
 using LinearAlgebra
 using SpecialFunctions
 using DelimitedFiles
@@ -940,9 +940,9 @@ end
 
 
 function uellnkrx(ell, n, gkr, x)
-	real(exp(0.5im * pi * ell)
-	* (im*gkr)^(-2-n)
-	* inc_gamma_upper(complex(n+1), im*gkr*x))
+	inc_gam = inc_gamma_upper(complex(n+1), im*gkr*x)  # part of package IncGammaBeta.jl
+	#inc_gam = gamma_inc(complex(n+1), im*gkr*x, 0)[2]  # part of package SpecialFunctions, but it doesn't take complex arguments.
+	return real(exp(0.5im * pi * ell) * (im*gkr)^(-2-n) * inc_gam)
 end
 
 
