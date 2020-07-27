@@ -19,7 +19,7 @@ export hyp2f1
 
 ############### ArbNumerics ######################
 using ArbNumerics
-T = ArbComplex{1024}
+const T = ArbComplex{1024}
 function hyp2f1(a::Number, b::Number, c::Number, z::Number)
     res = ArbNumerics.hypergeometric_2F1(T(a), T(b), T(c), T(z))
     #return ComplexF64(Float64(real(res)), Float64(imag(res)))
