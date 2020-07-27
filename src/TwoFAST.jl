@@ -9,8 +9,10 @@ export calcwljj
 # from this package
 include("PerformanceStats.jl")
 include("Miller.jl")
+include("Hyp2f1.jl")
 using .PerformanceStats
 using .Miller
+using .Hyp2f1
 
 # other packages
 using FFTW
@@ -22,23 +24,6 @@ using Logging
 #using SphBes
 
 import Base.write
-
-
-# Nemo
-module NemoHyp2F1
-export hyp2f1
-using Nemo
-CC = ComplexField(1024)
-toacb(x) = CC(real(x), imag(x))
-function hyp2f1(a::Number, b::Number, c::Number, z::Number)
-    #@show toacb(a) toacb(b) toacb(c) toacb(z)
-    res = Nemo.hyp2f1(toacb(a), toacb(b), toacb(c), toacb(z))
-    #@show res
-    return ComplexF64(Float64(real(res)), Float64(imag(res)))
-end
-end
-using .NemoHyp2F1
-
 
 
 ###################### muladd variants ##############################
