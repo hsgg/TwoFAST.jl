@@ -11,6 +11,19 @@ using Dierckx
 using .TwoFASTTestLib
 using DelimitedFiles
 
+using TwoFAST.PerformanceStats
+
+function test_performancestats()
+    t = @timed Nothing
+    @show t typeof(t) TwoFAST.PerformanceStats.TimedType
+    t += @timed Nothing
+    t += t
+    @show t
+    println("t: ", t)
+end
+
+test_performancestats()
+
 
 ############### test xicalc #######################
 

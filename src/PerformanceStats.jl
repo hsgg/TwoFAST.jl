@@ -15,6 +15,13 @@ import Base.+  # This is the function we want to extend
 import Base.show
 
 
+# Note: it would be more elegant to handle pre-1.5 and post-1.5 versions
+# separately. However, this suffices for now.
+TimedType{T} = Union{Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
+		  NamedTuple{(:value, :time, :bytes, :gctime, :gcstats),
+			Tuple{T,Float64,Int64,Float64,Base.GC_Diff}}} where {T}
+
+
 function +(x::Base.GC_Diff, y::Base.GC_Diff)
 	return Base.GC_Diff(
 		x.allocd	+ y.allocd,	# Bytes allocated
@@ -29,8 +36,7 @@ function +(x::Base.GC_Diff, y::Base.GC_Diff)
 end
 
 
-function +(x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
-	   y::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff})
+function +(x::TimedType, y::TimedType)
 	return (Nothing,	# value of the expression
 		x[2] + y[2],	# elapsed time
 		x[3] + y[3],	# total bytes allocated
@@ -53,7 +59,7 @@ function prettyprint_getunits_now(value, units, factor)
 end
 
 
-function show(stream::IO, x::Tuple{Any, Float64, Int64, Float64, Base.GC_Diff})
+function show(stream::IO, x::TimedType)
 	mem_units = [" byte", " KB", " MB", " GB", " TB", " PB"]
 	cnt_units = ["", " k", " M", " G", " T", " P"]
 	allocs = x[5].malloc + x[5].realloc + x[5].poolalloc + x[5].bigalloc
