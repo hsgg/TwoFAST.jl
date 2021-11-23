@@ -14,5 +14,5 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 [compat]
 ArbNumerics = "1"
 FFTW = "1"
-SpecialFunctions = "0.8 - 0.10, 1"
+SpecialFunctions = "0.8 - 0.10, 1, 2"
 julia = "1"
