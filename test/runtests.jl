@@ -154,8 +154,8 @@ function test_cache()
     # calc initial Ml cache at high ell
     RR = collect(0.6:0.1:1.1)
     cache = F21EllCache(1200, RR)
-    write("out/f21ellcache", cache)
-    cache2 = F21EllCache("out/f21ellcache")
+    write("out/f21ellcache-test", cache)
+    cache2 = F21EllCache("out/f21ellcache-test")
 
     # calc full MlCache
     ell = 10:10:1200
