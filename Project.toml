@@ -1,7 +1,7 @@
 name = "TwoFAST"
 uuid = "0dd23c3e-f403-11e8-3e11-4dddf690af97"
 authors = ["Henry Gebhardt <hsggebhardt@gmail.com>"]
-version = "0.1.5"
+version = "0.1.6"
 
 [deps]
 ArbNumerics = "7e558dbc-694d-5a72-987c-6f4ebed21442"
