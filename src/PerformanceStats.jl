@@ -17,11 +17,17 @@ import Base.show
 
 # Note: it would be more elegant to handle pre-1.5 and post-1.5 versions
 # separately. However, this suffices for now.
-TimedType{T} = Union{Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
-		  NamedTuple{(:value, :time, :bytes, :gctime, :gcstats),
-			Tuple{T,Float64,Int64,Float64,Base.GC_Diff}}} where {T}
+TimedType{T} = Union{
+	# pre-1.5 julia
+	Tuple{Any, Float64, Int64, Float64, Base.GC_Diff},
+	# julia 1.5 to 1.10
+	NamedTuple{(:value, :time, :bytes, :gctime, :gcstats), Tuple{T,Float64,Int64,Float64,Base.GC_Diff}},
+	# julia 1.11 and later
+	NamedTuple{(:value, :time, :bytes, :gctime, :gcstats, :lock_conflicts, :compile_time, :recompile_time), Tuple{T,Float64,Int64,Float64,Base.GC_Diff,Int64,Float64,Float64}},
+} where {T}
 
 
+# One of the entries in `TimedType` is a GC_Diff
 function +(x::Base.GC_Diff, y::Base.GC_Diff)
 	return Base.GC_Diff(
 		x.allocd	+ y.allocd,	# Bytes allocated
@@ -36,6 +42,8 @@ function +(x::Base.GC_Diff, y::Base.GC_Diff)
 end
 
 
+# No need to sum up ALL of the entries. Yes, we will loose some info this way,
+# but we get the information we want.
 function +(x::TimedType, y::TimedType)
 	return (Nothing,	# value of the expression
 		x[2] + y[2],	# elapsed time
