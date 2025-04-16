@@ -170,29 +170,41 @@ end
 end # module
 
 
-TestTwoFAST.test_xiln(0)
-TestTwoFAST.test_xiln(1)
-TestTwoFAST.test_xiln(2)
-TestTwoFAST.test_xiln(3)
-TestTwoFAST.test_xiln(4)
-TestTwoFAST.test_xi_derivs()
+using Test
 
-TestTwoFAST.test_wl_χ2303_R(1.1, 1e-11)
-TestTwoFAST.test_wl_χ2303_R(1.0, 2e-10)
-TestTwoFAST.test_wl_χ2303_R(0.9, 1e-11)
-TestTwoFAST.test_wl_χ2303_R(0.8, 1e-12)
-TestTwoFAST.test_wl_χ2303_R(0.7, 1e-11)
-TestTwoFAST.test_wl_χ2303_R(0.6, 1e-11)
-TestTwoFAST.test_wl_χ2303_R(0.5, 2e-11)
-TestTwoFAST.test_wl_χ2303_R(0.4, 1e-11)
-TestTwoFAST.test_wl_χ2303_R(0.3, 1e-11)
-TestTwoFAST.test_wl_χ2303_R(0.2, 1e-11)
-TestTwoFAST.test_wl_χ2303_R(0.1, 1e-11)
-TestTwoFAST.test_wl_ℓRR(42)
-TestTwoFAST.test_wl_ℓRR(100)
+@testset verbose=true "TwoFAST.jl" begin
+    @testset "xicalc()" begin
+        TestTwoFAST.test_xiln(0)
+        TestTwoFAST.test_xiln(1)
+        TestTwoFAST.test_xiln(2)
+        TestTwoFAST.test_xiln(3)
+        TestTwoFAST.test_xiln(4)
+        TestTwoFAST.test_xi_derivs()
+    end
 
-TestTwoFAST.test_cache()
+    @testset "wl" begin
+        TestTwoFAST.test_wl_χ2303_R(1.1, 1e-11)
+        TestTwoFAST.test_wl_χ2303_R(1.0, 2e-10)
+        TestTwoFAST.test_wl_χ2303_R(0.9, 1e-11)
+        TestTwoFAST.test_wl_χ2303_R(0.8, 1e-12)
+        TestTwoFAST.test_wl_χ2303_R(0.7, 1e-11)
+        TestTwoFAST.test_wl_χ2303_R(0.6, 1e-11)
+        TestTwoFAST.test_wl_χ2303_R(0.5, 2e-11)
+        TestTwoFAST.test_wl_χ2303_R(0.4, 1e-11)
+        TestTwoFAST.test_wl_χ2303_R(0.3, 1e-11)
+        TestTwoFAST.test_wl_χ2303_R(0.2, 1e-11)
+        TestTwoFAST.test_wl_χ2303_R(0.1, 1e-11)
+        TestTwoFAST.test_wl_ℓRR(42)
+        TestTwoFAST.test_wl_ℓRR(100)
+    end
 
-include("../Julia/twofast_example.jl")
+    @testset "cache" begin
+        TestTwoFAST.test_cache()
+    end
+
+    @testset "examples" begin
+        include("../Julia/twofast_example.jl")
+    end
+end
 
 # vim: set sw=4 et sts=4 :
